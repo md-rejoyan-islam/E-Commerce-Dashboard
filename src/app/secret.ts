@@ -33,6 +33,14 @@ const emailPassword: string = process.env.EMAIL_PASSWORD!;
 
 const client_url: string = process.env.CLIENT_URL!;
 
+const redis_host: string = process.env.REDIS_HOST || '127.0.0.1';
+const redis_port: number = +process.env.REDIS_PORT! || 6379;
+const redis_password: string | undefined =
+  process.env.REDIS_PASSWORD || undefined;
+const redis_url: string =
+  process.env.REDIS_URL ||
+  `redis://${redis_password ? `:${redis_password}@` : ''}${redis_host}:${redis_port}`;
+
 const secret = {
   node_env,
   mongo_uri,
@@ -54,6 +62,12 @@ const secret = {
     emailUsername,
     emailPassword,
     emailFrom: process.env.EMAIL_FROM!,
+  },
+  redis: {
+    redis_host,
+    redis_port,
+    redis_password,
+    redis_url,
   },
 };
 
