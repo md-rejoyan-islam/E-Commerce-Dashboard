@@ -1,44 +1,57 @@
 import { Request } from 'express';
-import multer, { memoryStorage } from 'multer';
-const supportedFormat = ['.bin', 'pdf'];
+import fs from 'fs';
+import multer, { diskStorage } from 'multer';
+import path from 'path';
+import { IMulterConfig } from '../app/types';
 
-const upload = multer({
-  storage: memoryStorage(),
-  limits: {
-    fileSize: 5 * 1024 * 1024, // Set the file size limit to 5MB
-  },
-  fileFilter: (_req: Request, file, cb) => {
-    if (
-      supportedFormat.some((format) => file.mimetype.includes(format)) ||
-      file.mimetype === 'application/octet-stream'
-    ) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only .bin and .gif files are allowed!'));
-    }
-  },
-});
+const multerUploader = (config: IMulterConfig) => {
+  const {
+    uploadPath = 'public/uploads/images',
+    maxSize = 0.5,
+    allowedMimeTypes = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+    ],
+    single = true,
+    fieldName = single ? 'file' : 'files',
+  } = config;
 
-const studentFileUpload = multer({
-  storage: memoryStorage(),
-  limits: {
-    fileSize: 10 * 1024 * 1024, // Set the file size limit to 10MB
-  },
-  fileFilter: (req, file, cb) => {
-    console.log(file.mimetype);
-    console.log(file);
+  // Ensure upload directory exists
+  const fullPath = path.join(process.cwd(), uploadPath);
+  if (!fs.existsSync(fullPath)) {
+    fs.mkdirSync(fullPath, { recursive: true });
+  }
 
-    if (
-      ['.json'].some((format) => file.mimetype.includes(format)) ||
-      file.mimetype === 'application/json'
-    ) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only .json files are allowed!'));
-    }
-  },
-});
+  const storage = diskStorage({
+    destination: (_req: Request, _file, cb) => {
+      cb(null, fullPath);
+    },
+    filename: (_req: Request, file, cb) => {
+      const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+      const ext = path.extname(file.originalname);
+      const name = path.basename(file.originalname, ext);
+      cb(null, `${name}-${uniqueSuffix}${ext}`);
+    },
+  });
 
-export { studentFileUpload };
+  const upload = multer({
+    storage,
+    limits: {
+      fileSize: maxSize * 1024 * 1024, // Convert MB to bytes
+    },
+    fileFilter: (_req: Request, file, cb) => {
+      if (allowedMimeTypes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error(`Only ${allowedMimeTypes.join(', ')} files are allowed!`));
+      }
+    },
+  });
 
-export default upload;
+  return single ? upload.single(fieldName) : upload.array(fieldName, 10);
+};
+
+export default multerUploader;

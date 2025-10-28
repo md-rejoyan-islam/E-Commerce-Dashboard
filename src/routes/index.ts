@@ -3,6 +3,11 @@ import createError from 'http-errors';
 
 import errorHandler from '../middlewares/error-handler';
 import { register } from '../middlewares/matrics-middleware';
+import authRouter from '../modules/auth/auth.route';
+import brandRouter from '../modules/brand/brand.route';
+import categoryRouter from '../modules/category/category.route';
+import productRouter from '../modules/product/product.route';
+import userRouter from '../modules/user/user.route';
 import { asyncHandler } from '../utils/async-handler';
 import { successResponse } from '../utils/response-handler';
 
@@ -34,7 +39,19 @@ router.get(
 );
 
 // auth routes
-// router.use('/api/v1/auth', authRouter);
+router.use('/api/v1/auth', authRouter);
+
+// user routes
+router.use('/api/v1/users', userRouter);
+
+// brand routes
+router.use('/api/v1/brands', brandRouter);
+
+// category routes
+router.use('/api/v1/categories', categoryRouter);
+
+// product routes
+router.use('/api/v1/products', productRouter);
 
 // 404 route
 router.use('', (req: Request, _res: Response) => {

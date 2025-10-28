@@ -1,23 +1,27 @@
 ## Fields
 
-- first_name: string
-- last_name: string
-- email: string
-- password: string
-- is_active: boolean
-- role: string
-- last_login: datetime
-- phone :string
-- avatar :string
-- created_at: datetime
-- updated_at: datetime
+| Field Name | Type     | Description                       |
+| ---------- | -------- | --------------------------------- |
+| first_name | string   | User's first name                 |
+| last_name  | string   | User's last name                  |
+| email      | string   | User's email address (unique)     |
+| password   | string   | User's password (hashed)          |
+| is_active  | boolean  | User account active status        |
+| role       | string   | User role (admin/user/superadmin) |
+| last_login | datetime | Last login timestamp              |
+| phone      | string   | User's phone number               |
+| avatar     | string   | User's avatar URL                 |
+| created_at | datetime | Account creation timestamp        |
+| updated_at | datetime | Last update timestamp             |
 
-## routes
+## Routes
 
-- GET /users?search&role: List all users (admin only) [ with optional search, filter, sorting, and pagination ] [added caching with Redis]
-- POST /users: Create a new user (admin only) [Invalidate cache in Redis]
-- PATCH /users/{id}/status: Change a user's active status (admin only) [Invalidate cache in Redis]
-- PATCH /users/{id}/change-password: Change a user's password (admin only) [Invalidate cache in Redis]
-- GET /users/{id}: Retrieve a specific user's profile (admin only) [added caching with Redis]
-- PUT /users/{id}: Update a specific user's profile (admin only) [Invalidate cache in Redis]
-- DELETE /users/{id}: Delete a specific user (admin only) [Invalidate cache in Redis]
+| Method | Endpoint                    | Description                                                          | Access     | Cache            |
+| ------ | --------------------------- | -------------------------------------------------------------------- | ---------- | ---------------- |
+| GET    | /users?search&role          | List all users with optional search, filter, sorting, and pagination | Admin only | Redis cache      |
+| POST   | /users                      | Create a new user                                                    | Admin only | Invalidate cache |
+| GET    | /users/{id}                 | Retrieve a specific user's profile                                   | Admin only | Redis cache      |
+| PUT    | /users/{id}                 | Update a specific user's profile                                     | Admin only | Invalidate cache |
+| PATCH  | /users/{id}/status          | Change a user's active status                                        | Admin only | Invalidate cache |
+| PATCH  | /users/{id}/change-password | Change a user's password                                             | Admin only | Invalidate cache |
+| DELETE | /users/{id}                 | Delete a specific user                                               | Admin only | Invalidate cache |
