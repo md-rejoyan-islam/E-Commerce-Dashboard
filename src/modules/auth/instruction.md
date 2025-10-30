@@ -22,6 +22,6 @@
 | POST   | /login       | Authenticate a user and return tokens     | Public        | Redis cache (rate limit) |
 | POST   | /refresh     | Refresh access token using refresh token  | Public        | -                        |
 | POST   | /logout      | Invalidate the user's token               | Authenticated | Invalidate cache         |
-| GET    | /me          | Retrieve the authenticated user's profile | Authenticated | Redis cache              |
+| GET    | /me?fields   | Retrieve the authenticated user's profile | Authenticated | Redis cache              |
 | PUT    | /me          | Update the authenticated user's profile   | Authenticated | Invalidate cache         |
 | PATCH  | /me/password | Change the authenticated user's password  | Authenticated | Invalidate cache         |

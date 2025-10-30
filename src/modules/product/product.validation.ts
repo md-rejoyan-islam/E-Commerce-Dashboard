@@ -1,4 +1,8 @@
 import z from 'zod';
+import ProductModel from './product.model';
+
+// Valid product fields that can be requested
+const validProductFields = Object.keys(ProductModel.schema.paths);
 
 // Inventory validation schema
 const inventorySchema = z.object({
@@ -160,6 +164,24 @@ export const getProductsQuerySchema = z.object({
     search: z.string().optional(),
     category: z.string().optional(),
     brand: z.string().optional(),
+    fields: z
+      .string()
+      .optional()
+      .refine(
+        (fields) => {
+          if (!fields) return true;
+          const requestedFields = fields
+            .split(',')
+            .map((f: string) => f.trim());
+          const invalidFields = requestedFields.filter(
+            (field: string) => !validProductFields.includes(field),
+          );
+          return invalidFields.length === 0;
+        },
+        {
+          message: `Invalid field(s) requested. Valid fields are: ${validProductFields.join(', ')}`,
+        },
+      ),
     featured: z
       .string()
       .optional()
@@ -176,6 +198,30 @@ export const getProductsQuerySchema = z.object({
     limit: z.coerce.number().int().positive().max(100).default(10).optional(),
     sortBy: z.string().optional(),
     sortOrder: z.enum(['asc', 'desc']).optional(),
+  }),
+});
+
+export const getProductByIdSchema = z.object({
+  params: z.object({ id: z.string().min(1) }),
+  query: z.object({
+    fields: z
+      .string()
+      .optional()
+      .refine(
+        (fields) => {
+          if (!fields) return true;
+          const requestedFields = fields
+            .split(',')
+            .map((f: string) => f.trim());
+          const invalidFields = requestedFields.filter(
+            (field: string) => !validProductFields.includes(field),
+          );
+          return invalidFields.length === 0;
+        },
+        {
+          message: `Invalid field(s) requested. Valid fields are: ${validProductFields.join(', ')}`,
+        },
+      ),
   }),
 });
 

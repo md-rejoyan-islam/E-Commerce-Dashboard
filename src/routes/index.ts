@@ -4,10 +4,14 @@ import createError from 'http-errors';
 import errorHandler from '../middlewares/error-handler';
 import { register } from '../middlewares/matrics-middleware';
 import authRouter from '../modules/auth/auth.route';
+import bannerRouter from '../modules/banner/banner.route';
 import brandRouter from '../modules/brand/brand.route';
+import cartRouter from '../modules/cart/cart.route';
 import categoryRouter from '../modules/category/category.route';
 import productRouter from '../modules/product/product.route';
+import storeRouter from '../modules/store/store.route';
 import userRouter from '../modules/user/user.route';
+import wishlistRouter from '../modules/wishlist/wishlist.route';
 import { asyncHandler } from '../utils/async-handler';
 import { successResponse } from '../utils/response-handler';
 
@@ -52,6 +56,18 @@ router.use('/api/v1/categories', categoryRouter);
 
 // product routes
 router.use('/api/v1/products', productRouter);
+
+// cart routes
+router.use('/api/v1/carts', cartRouter);
+
+// wishlist routes
+router.use('/api/v1/wishlist', wishlistRouter);
+
+// store routes
+router.use('/api/v1/stores', storeRouter);
+
+// banner routes
+router.use('/api/v1/banners', bannerRouter);
 
 // 404 route
 router.use('', (req: Request, _res: Response) => {

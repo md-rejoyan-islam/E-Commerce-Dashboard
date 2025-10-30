@@ -20,6 +20,7 @@ export class CategoryService {
       featured,
       is_active,
       parent_id,
+      fields,
       page = 1,
       limit = 10,
       sortBy = 'order',
@@ -52,13 +53,24 @@ export class CategoryService {
       [sortBy!]: sortOrder === 'asc' ? 1 : -1,
     };
 
+    // Build selection string
+    let selectFields = '';
+    if (fields) {
+      selectFields = fields.split(',').join(' ');
+    }
+
     const cacheKey = generateCacheKey({
       resource: CATEGORY_RESOURCE,
-      query: { ...filter, page, limit, sort, includeParent },
+      query: { ...filter, page, limit, sort, includeParent, fields },
     });
     const cached = await getCache<{
       data: unknown[];
-      meta: { total: number; page: number; limit: number };
+      pagination: {
+        items: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+      };
     }>(cacheKey);
     if (cached) return cached;
 
@@ -68,6 +80,10 @@ export class CategoryService {
       .skip(skip)
       .limit(Number(limit))
       .sort(sort);
+
+    if (selectFields) {
+      queryBuilder.select(selectFields);
+    }
 
     // Conditionally populate parent_id based on includeParent
     if (includeParent === 'true') {
@@ -81,24 +97,69 @@ export class CategoryService {
 
     const payload = {
       data,
-      meta: { total, page: Number(page), limit: Number(limit) },
+      pagination: {
+        items: total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / Number(limit)),
+      },
     };
     await setCache(cacheKey, payload);
     return payload;
   }
+  // Get all categories with their direct children
+  static async getCategoriesWithChildren(query: { is_active?: boolean }) {
+    const categories = await CategoryModel.find({
+      parent_id: null,
+      is_active:
+        query.is_active !== undefined ? query.is_active : { $exists: true },
+    })
+      .sort({ order: 1 })
+      .lean();
 
-  static async getById(id: string, includeParent?: boolean) {
+    const categoriesWithChildren = await Promise.all(
+      categories.map(async (category) => {
+        const children = await CategoryModel.find({
+          parent_id: category._id,
+          is_active:
+            query.is_active !== undefined ? query.is_active : { $exists: true },
+        })
+          .sort({ order: 1 })
+          .lean();
+        return { ...category, children };
+      }),
+    );
+
+    return categoriesWithChildren;
+  }
+
+  // Get a single category by its ID
+  static async getById(
+    id: string,
+    query: { includeParent?: boolean; fields?: string },
+  ) {
     if (!isValidMongoId(id)) {
       throw createError.BadRequest('Invalid category id');
     }
+    const { includeParent, fields } = query;
     const cacheKey = generateCacheKey({
       resource: `${CATEGORY_RESOURCE}:${id}`,
-      query: { includeParent },
+      query: { includeParent, fields },
     });
     const cached = await getCache<Record<string, unknown>>(cacheKey);
     if (cached) return cached;
 
     let queryBuilder = CategoryModel.findById(id);
+
+    // Build selection string
+    let selectFields = '';
+    if (fields) {
+      selectFields = fields.split(',').join(' ');
+    }
+
+    if (selectFields) {
+      queryBuilder.select(selectFields);
+    }
 
     // Conditionally populate parent_id based on includeParent
     if (includeParent === true) {
@@ -111,6 +172,7 @@ export class CategoryService {
     return category;
   }
 
+  // Create a new category
   static async create(data: Record<string, unknown>) {
     // Generate slug from name if not provided
     if (!data.slug && data.name) {
@@ -135,6 +197,7 @@ export class CategoryService {
     return { _id: category._id };
   }
 
+  // Update an existing category
   static async update(id: string, data: Record<string, unknown>) {
     if (!isValidMongoId(id)) {
       throw createError.BadRequest('Invalid category id');
@@ -181,10 +244,12 @@ export class CategoryService {
     return category;
   }
 
+  // Change the active status of a category
   static async changeStatus(id: string, is_active: boolean) {
     return this.update(id, { is_active });
   }
 
+  // Delete a category
   static async remove(id: string) {
     if (!isValidMongoId(id)) {
       throw createError.BadRequest('Invalid category id');

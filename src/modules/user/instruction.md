@@ -18,9 +18,9 @@
 
 | Method | Endpoint                    | Description                                                          | Access     | Cache            |
 | ------ | --------------------------- | -------------------------------------------------------------------- | ---------- | ---------------- |
-| GET    | /users?search&role          | List all users with optional search, filter, sorting, and pagination | Admin only | Redis cache      |
+| GET    | /users?search&role&fields   | List all users with optional search, filter, sorting, and pagination | Admin only | Redis cache      |
 | POST   | /users                      | Create a new user                                                    | Admin only | Invalidate cache |
-| GET    | /users/{id}                 | Retrieve a specific user's profile                                   | Admin only | Redis cache      |
+| GET    | /users/{id}?fields          | Retrieve a specific user's profile                                   | Admin only | Redis cache      |
 | PUT    | /users/{id}                 | Update a specific user's profile                                     | Admin only | Invalidate cache |
 | PATCH  | /users/{id}/status          | Change a user's active status                                        | Admin only | Invalidate cache |
 | PATCH  | /users/{id}/change-password | Change a user's password                                             | Admin only | Invalidate cache |

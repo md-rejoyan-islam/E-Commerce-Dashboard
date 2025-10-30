@@ -12,6 +12,7 @@ import {
 } from './auth.controller';
 import {
   changeMyPasswordSchema,
+  getMeSchema,
   loginSchema,
   registerSchema,
   updateMeSchema,
@@ -23,7 +24,7 @@ router.post('/register', isLoggedOut, validate(registerSchema), register);
 router.post('/login', isLoggedOut, validate(loginSchema), login);
 router.post('/refresh', refresh);
 router.post('/logout', isLoggedIn, logout);
-router.get('/me', isLoggedIn, me);
+router.get('/me', isLoggedIn, validate(getMeSchema), me);
 router.put('/me', isLoggedIn, validate(updateMeSchema), updateMe);
 router.patch(
   '/me/password',

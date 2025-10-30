@@ -3,14 +3,7 @@ import { authorize } from '../../middlewares/authorized';
 import validate from '../../middlewares/validate';
 import { isLoggedIn } from '../../middlewares/verify';
 import multerUploader from '../../utils/multer';
-import {
-  changeCategoryStatus,
-  createCategory,
-  deleteCategory,
-  getCategories,
-  getCategoryById,
-  updateCategory,
-} from './category.controller';
+import * as CategoryController from './category.controller';
 import {
   changeStatusSchema,
   createCategorySchema,
@@ -30,8 +23,17 @@ const categoryImageUpload = multerUploader({
 const router = Router();
 
 // Public routes
-router.get('/', validate(getCategoriesQuerySchema), getCategories);
-router.get('/:id', validate(getCategoryByIdSchema), getCategoryById);
+router.get(
+  '/',
+  validate(getCategoriesQuerySchema),
+  CategoryController.getCategories,
+);
+router.get('/with-children', CategoryController.getCategoriesWithChildren);
+router.get(
+  '/:id',
+  validate(getCategoryByIdSchema),
+  CategoryController.getCategoryById,
+);
 
 // Admin only routes
 router.post(
@@ -40,7 +42,7 @@ router.post(
   authorize(['admin', 'superadmin']),
   validate(createCategorySchema),
   categoryImageUpload,
-  createCategory,
+  CategoryController.createCategory,
 );
 
 router.put(
@@ -49,7 +51,7 @@ router.put(
   authorize(['admin', 'superadmin']),
   validate(updateCategorySchema),
   categoryImageUpload,
-  updateCategory,
+  CategoryController.updateCategory,
 );
 
 router.patch(
@@ -57,14 +59,14 @@ router.patch(
   isLoggedIn,
   authorize(['admin', 'superadmin']),
   validate(changeStatusSchema),
-  changeCategoryStatus,
+  CategoryController.changeCategoryStatus,
 );
 
 router.delete(
   '/:id',
   isLoggedIn,
   authorize(['admin', 'superadmin']),
-  deleteCategory,
+  CategoryController.deleteCategory,
 );
 
 export default router;

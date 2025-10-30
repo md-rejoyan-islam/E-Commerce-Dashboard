@@ -18,13 +18,17 @@ export class UserService {
     const {
       search,
       role,
+      fields,
       page = 1,
       limit = 10,
       sortBy = 'createdAt',
       sortOrder = 'desc',
     } = query || {};
 
-    const filter: Record<string, unknown> = {};
+    const filter: {
+      role?: string;
+      $or?: { [key: string]: { $regex: string; $options: string } }[];
+    } = {};
     if (role) filter.role = role;
     if (search) {
       filter.$or = [
@@ -41,7 +45,7 @@ export class UserService {
 
     const cacheKey = generateCacheKey({
       resource: USER_RESOURCE,
-      query: { ...filter, page, limit, sort },
+      query: { ...filter, page, limit, sort, fields },
     });
     const cached = await getCache<{
       data: unknown[];
@@ -49,13 +53,29 @@ export class UserService {
     }>(cacheKey);
     if (cached) return cached;
 
+    // Build selection string
+    let selectFields = '-password -refresh_token';
+    if (fields) {
+      const requestedFields = fields
+        .split(',')
+        .map((f: string) => f.trim())
+        .filter((f: string) => f);
+      const allowedFields = requestedFields.filter(
+        (f: string) => f !== 'password' && f !== 'refresh_token',
+      );
+
+      if (allowedFields.length > 0) {
+        selectFields = allowedFields.join(' ');
+      }
+    }
+
     const skip = (Number(page) - 1) * Number(limit);
     const [data, total] = await Promise.all([
       UserModel.find(filter)
         .skip(skip)
         .limit(Number(limit))
         .sort(sort)
-        .select('-password')
+        .select(selectFields)
         .lean(),
       UserModel.countDocuments(filter),
     ]);
@@ -64,7 +84,7 @@ export class UserService {
       items: total,
       limit: Number(limit),
       page: Number(page),
-      totalPages: total,
+      totalPages: Math.ceil(total / Number(limit)),
     };
 
     const payload = {
@@ -75,13 +95,32 @@ export class UserService {
     return payload;
   }
 
-  static async getById(id: string) {
+  static async getById(id: string, fields?: string) {
     if (!isValidMongoId(id)) throw createError.BadRequest('Invalid user id');
-    const cacheKey = generateCacheKey({ resource: `${USER_RESOURCE}:${id}` });
+    const cacheKey = generateCacheKey({
+      resource: `${USER_RESOURCE}:${id}`,
+      query: { fields },
+    });
     const cached = await getCache<Record<string, unknown>>(cacheKey);
     if (cached) return cached;
 
-    const user = await UserModel.findById(id).select('-password').lean();
+    // Build selection string
+    let selectFields = '-password -refresh_token';
+    if (fields) {
+      const requestedFields = fields
+        .split(',')
+        .map((f: string) => f.trim())
+        .filter((f: string) => f);
+      const allowedFields = requestedFields.filter(
+        (f: string) => f !== 'password' && f !== 'refresh_token',
+      );
+
+      if (allowedFields.length > 0) {
+        selectFields = allowedFields.join(' ');
+      }
+    }
+
+    const user = await UserModel.findById(id).select(selectFields).lean();
     if (!user) throw createError.NotFound('User not found');
     await setCache(cacheKey, user);
     return user;

@@ -18,6 +18,7 @@
 | Method | Endpoint                                            | Description                                                               | Access     | Cache            |
 | ------ | --------------------------------------------------- | ------------------------------------------------------------------------- | ---------- | ---------------- |
 | GET    | /categories?search&featured&is_active&includeParent | List all categories with optional search, filter, sorting, and pagination | Public     | Redis cache      |
+| GET    | /categories/with-children?is_active                 | List categories along with their child categories                         | Public     | Redis cache      |
 | POST   | /categories                                         | Create a new category                                                     | Admin only | Invalidate cache |
 | GET    | /categories/{id}                                    | Retrieve a specific category                                              | Public     | Redis cache      |
 | PUT    | /categories/{id}                                    | Update a specific category                                                | Admin only | Invalidate cache |

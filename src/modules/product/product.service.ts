@@ -31,6 +31,7 @@ export class ProductService {
       search,
       category,
       brand,
+      fields,
       featured,
       is_active,
       page = 1,
@@ -67,25 +68,43 @@ export class ProductService {
     // Calculate pagination
     const skip = (page - 1) * limit;
 
+    // Build selection string
+    let selectFields = '';
+    if (fields) {
+      const requestedFields = fields
+        .split(',')
+        .map((f: string) => f.trim())
+        .filter((f: string) => f);
+
+      if (requestedFields.length > 0) {
+        selectFields = requestedFields.join(' ');
+      }
+    }
+
     // Execute queries
+    const productQuery = ProductModel.find(filter)
+      .populate('category', 'name slug')
+      .populate('brand', 'name slug')
+      .sort(sort)
+      .skip(skip)
+      .limit(limit);
+
+    if (selectFields) {
+      productQuery.select(selectFields);
+    }
+
     const [products, total] = await Promise.all([
-      ProductModel.find(filter)
-        .populate('category', 'name slug')
-        .populate('brand', 'name slug')
-        .sort(sort)
-        .skip(skip)
-        .limit(limit)
-        .lean(),
+      productQuery.lean(),
       ProductModel.countDocuments(filter),
     ]);
 
     const result = {
       products,
       pagination: {
-        current_page: page,
-        per_page: limit,
-        total,
-        total_pages: Math.ceil(total / limit),
+        items: total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
     };
 
@@ -94,20 +113,41 @@ export class ProductService {
   }
 
   // Get product by ID
-  static async getById(id: string) {
+  static async getById(id: string, fields?: string) {
     if (!isValidMongoId(id)) {
       throw new Error('Invalid product ID');
     }
 
-    const cacheKey = generateCacheKey({ resource: 'product', query: { id } });
+    const cacheKey = generateCacheKey({
+      resource: 'product',
+      query: { id, fields },
+    });
     const cached = await getCache(cacheKey);
     if (cached) return cached;
 
-    const product = await ProductModel.findById(id)
+    // Build selection string
+    let selectFields = '';
+    if (fields) {
+      const requestedFields = fields
+        .split(',')
+        .map((f: string) => f.trim())
+        .filter((f: string) => f);
+
+      if (requestedFields.length > 0) {
+        selectFields = requestedFields.join(' ');
+      }
+    }
+
+    const productQuery = ProductModel.findById(id)
       .populate('category', 'name slug')
       .populate('brand', 'name slug')
-      .populate('reviews.user', 'first_name last_name')
-      .lean();
+      .populate('reviews.user', 'first_name last_name');
+
+    if (selectFields) {
+      productQuery.select(selectFields);
+    }
+
+    const product = await productQuery.lean();
 
     if (!product) {
       throw new Error('Product not found');

@@ -15,11 +15,11 @@
 
 ## Routes
 
-| Method | Endpoint                 | Description                                                           | Access     | Cache            |
-| ------ | ------------------------ | --------------------------------------------------------------------- | ---------- | ---------------- |
-| GET    | /brands?search&is_active | List all brands with optional search, filter, sorting, and pagination | Public     | Redis cache      |
-| POST   | /brands                  | Create a new brand                                                    | Admin only | Invalidate cache |
-| GET    | /brands/{id}             | Retrieve a specific brand                                             | Public     | Redis cache      |
-| PUT    | /brands/{id}             | Update a specific brand                                               | Admin only | Invalidate cache |
-| PATCH  | /brands/{id}/status      | Change a brand's active status                                        | Admin only | Invalidate cache |
-| DELETE | /brands/{id}             | Delete a specific brand                                               | Admin only | Invalidate cache |
+| Method | Endpoint                        | Description                                                           | Access     | Cache            |
+| ------ | ------------------------------- | --------------------------------------------------------------------- | ---------- | ---------------- |
+| GET    | /brands?search&is_active&fields | List all brands with optional search, filter, sorting, and pagination | Public     | Redis cache      |
+| POST   | /brands                         | Create a new brand                                                    | Admin only | Invalidate cache |
+| GET    | /brands/{id}?fields             | Retrieve a specific brand                                             | Public     | Redis cache      |
+| PUT    | /brands/{id}                    | Update a specific brand                                               | Admin only | Invalidate cache |
+| PATCH  | /brands/{id}/status             | Change a brand's active status                                        | Admin only | Invalidate cache |
+| DELETE | /brands/{id}                    | Delete a specific brand                                               | Admin only | Invalidate cache |

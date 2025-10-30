@@ -2,13 +2,14 @@ import { Router } from 'express';
 import { authorize } from '../../middlewares/authorized';
 import validate from '../../middlewares/validate';
 import { isLoggedIn } from '../../middlewares/verify';
-import { ProductController } from './product.controller';
+import * as ProductController from './product.controller';
 import {
   addFAQSchema,
   addReviewSchema,
   addVariantSchema,
   changeStatusSchema,
   createProductSchema,
+  getProductByIdSchema,
   getProductsQuerySchema,
   updateFAQSchema,
   updateInventorySchema,
@@ -25,7 +26,11 @@ router.get(
   validate(getProductsQuerySchema),
   ProductController.getProducts,
 );
-router.get('/:id', ProductController.getProductById);
+router.get(
+  '/:id',
+  validate(getProductByIdSchema),
+  ProductController.getProductById,
+);
 
 // Admin routes - Product CRUD
 router.post(

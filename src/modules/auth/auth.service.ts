@@ -12,14 +12,13 @@ import { generateRandomPin } from '../../utils/generate-random-pin';
 import generateToken from '../../utils/generate-token';
 import { comparePassword, hashPassword } from '../../utils/password';
 import UserModel from '../user/user.model';
-import { registerSchema } from './auth.validation';
+import { RegisterInput } from './auth.validation';
 
 export class AuthService {
-  static async register(payload: unknown) {
-    const parsed = await registerSchema.shape.body.parseAsync(payload);
-    const exists = await UserModel.findOne({ email: parsed.email }).lean();
+  static async register(payload: RegisterInput) {
+    const exists = await UserModel.findOne({ email: payload.email }).lean();
     if (exists) throw createError.Conflict('Email already exists');
-    const user = await UserModel.create({ ...parsed });
+    const user = await UserModel.create({ ...payload });
     return { _id: user._id };
   }
 
@@ -107,21 +106,38 @@ export class AuthService {
   }
 
   static async logout(userId: string) {
-    await UserModel.findByIdAndUpdate(userId, {
-      $unset: { refresh_token: '' },
-    });
     // Invalidate possible auth caches
     await deleteCache(generateCacheKey({ resource: 'me', query: { userId } }));
     return { success: true };
   }
 
-  static async me(userId: string) {
-    const cacheKey = generateCacheKey({ resource: 'me', query: { userId } });
+  static async me(userId: string, fields?: string) {
+    const cacheKey = generateCacheKey({
+      resource: 'me',
+      query: { userId, fields },
+    });
     const cached = await getCache<Record<string, unknown>>(cacheKey);
     if (cached) return cached;
-    const user = await UserModel.findById(userId)
-      .select('-password -refresh_token')
-      .lean();
+
+    // Build selection string
+    let selectFields = '-password -refresh_token';
+    if (fields) {
+      // Parse comma-separated fields and add them to selection
+      const requestedFields = fields
+        .split(',')
+        .map((f) => f.trim())
+        .filter((f) => f);
+      // Filter out sensitive fields that should never be returned
+      const allowedFields = requestedFields.filter(
+        (f) => f !== 'password' && f !== 'refresh_token',
+      );
+
+      if (allowedFields.length > 0) {
+        selectFields = allowedFields.join(' ');
+      }
+    }
+
+    const user = await UserModel.findById(userId).select(selectFields).lean();
     if (!user) throw createError.NotFound('User not found');
     await setCache(cacheKey, user);
     return user;

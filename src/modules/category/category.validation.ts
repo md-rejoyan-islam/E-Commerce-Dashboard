@@ -82,6 +82,7 @@ export const getCategoriesQuerySchema = z.object({
       })
       .optional(),
     parent_id: z.string().optional(),
+    fields: z.string().optional(),
     page: z.coerce.number().int().positive().default(1).optional(),
     limit: z.coerce.number().int().positive().max(100).default(10).optional(),
     sortBy: z.string().optional(),

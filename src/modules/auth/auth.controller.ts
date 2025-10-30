@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { IRequestWithUser } from '../../app/types';
 import { asyncHandler } from '../../utils/async-handler';
 import { successResponse } from '../../utils/response-handler';
 import { AuthService } from './auth.service';
@@ -32,21 +33,22 @@ export const refresh = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
-export const logout = asyncHandler(async (req: Request, res: Response) => {
-  // @ts-expect-error added by isLoggedIn
-  const userId = req.user?._id as string;
-  const data = await AuthService.logout(userId);
-  successResponse(res, {
-    statusCode: 200,
-    message: 'Logged out',
-    payload: { data },
-  });
-});
+export const logout = asyncHandler(
+  async (req: IRequestWithUser, res: Response) => {
+    const userId = req.user?._id as string;
+    const data = await AuthService.logout(userId);
+    successResponse(res, {
+      statusCode: 200,
+      message: 'Logged out',
+      payload: { data },
+    });
+  },
+);
 
-export const me = asyncHandler(async (req: Request, res: Response) => {
-  // @ts-expect-error added by isLoggedIn
+export const me = asyncHandler(async (req: IRequestWithUser, res: Response) => {
   const userId = req.user?._id as string;
-  const data = await AuthService.me(userId);
+  const fields = req.query.fields as string;
+  const data = await AuthService.me(userId, fields);
   successResponse(res, {
     statusCode: 200,
     message: 'Profile fetched',
@@ -54,20 +56,20 @@ export const me = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
-export const updateMe = asyncHandler(async (req: Request, res: Response) => {
-  // @ts-expect-error added by isLoggedIn
-  const userId = req.user?._id as string;
-  const data = await AuthService.updateMe(userId, req.body);
-  successResponse(res, {
-    statusCode: 200,
-    message: 'Profile updated',
-    payload: { data },
-  });
-});
+export const updateMe = asyncHandler(
+  async (req: IRequestWithUser, res: Response) => {
+    const userId = req.user?._id as string;
+    const data = await AuthService.updateMe(userId, req.body);
+    successResponse(res, {
+      statusCode: 200,
+      message: 'Profile updated',
+      payload: { data },
+    });
+  },
+);
 
 export const changeMyPassword = asyncHandler(
-  async (req: Request, res: Response) => {
-    // @ts-expect-error added by isLoggedIn
+  async (req: IRequestWithUser, res: Response) => {
     const userId = req.user?._id as string;
     const { old_password, new_password } = req.body as {
       old_password: string;

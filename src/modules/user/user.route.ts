@@ -15,6 +15,7 @@ import {
   changePasswordSchema,
   changeStatusSchema,
   createUserSchema,
+  getUserByIdSchema,
   getUsersQuerySchema,
   updateUserSchema,
 } from './user.validation';
@@ -36,7 +37,7 @@ userRouter.patch(
   changeUserPassword,
 );
 
-userRouter.get('/:id', getUserById);
+userRouter.get('/:id', validate(getUserByIdSchema), getUserById);
 
 userRouter.put('/:id', validate(updateUserSchema), updateUser);
 

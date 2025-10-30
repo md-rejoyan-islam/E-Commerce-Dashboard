@@ -1,4 +1,8 @@
 import z from 'zod';
+import BrandModel from './brand.model';
+
+// Valid brand fields that can be requested
+const validBrandFields = Object.keys(BrandModel.schema.paths);
 
 export const createBrandSchema = z.object({
   body: z.object({
@@ -61,6 +65,24 @@ export const getBrandsQuerySchema = z.object({
         },
       })
       .optional(),
+    fields: z
+      .string()
+      .optional()
+      .refine(
+        (fields) => {
+          if (!fields) return true;
+          const requestedFields = fields
+            .split(',')
+            .map((f: string) => f.trim());
+          const invalidFields = requestedFields.filter(
+            (field: string) => !validBrandFields.includes(field),
+          );
+          return invalidFields.length === 0;
+        },
+        {
+          message: `Invalid field(s) requested. Valid fields are: ${validBrandFields.join(', ')}`,
+        },
+      ),
     page: z.coerce.number().int().positive().default(1).optional(),
     limit: z.coerce.number().int().positive().max(100).default(10).optional(),
     sortBy: z.string().optional(),
@@ -68,4 +90,31 @@ export const getBrandsQuerySchema = z.object({
   }),
 });
 
+export const getBrandByIdSchema = z.object({
+  params: z.object({
+    id: z.string().min(1, 'Brand ID is required'),
+  }),
+  query: z.object({
+    fields: z
+      .string()
+      .optional()
+      .refine(
+        (fields) => {
+          if (!fields) return true;
+          const requestedFields = fields
+            .split(',')
+            .map((f: string) => f.trim());
+          const invalidFields = requestedFields.filter(
+            (field: string) => !validBrandFields.includes(field),
+          );
+          return invalidFields.length === 0;
+        },
+        {
+          message: `Invalid field(s) requested. Valid fields are: ${validBrandFields.join(', ')}`,
+        },
+      ),
+  }),
+});
+
 export type GetBrandsQuery = z.infer<typeof getBrandsQuerySchema>['query'];
+export type GetBrandByIdQuery = z.infer<typeof getBrandByIdSchema>['query'];

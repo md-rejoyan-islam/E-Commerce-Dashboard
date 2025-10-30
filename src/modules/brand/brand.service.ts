@@ -8,7 +8,7 @@ import {
 import generateSlug from '../../utils/generate-slug';
 import { isValidMongoId } from '../../utils/is-valid-mongo-id';
 import BrandModel from './brand.model';
-import { GetBrandsQuery } from './brand.validation';
+import { GetBrandByIdQuery, GetBrandsQuery } from './brand.validation';
 
 export const BRAND_RESOURCE = 'brands';
 
@@ -18,6 +18,7 @@ export class BrandService {
       search,
       featured,
       is_active,
+      fields,
       page = 1,
       limit = 10,
       sortBy = 'order',
@@ -46,35 +47,78 @@ export class BrandService {
 
     const cacheKey = generateCacheKey({
       resource: BRAND_RESOURCE,
-      query: { ...filter, page, limit, sort },
+      query: { ...filter, fields, page, limit, sort },
     });
     const cached = await getCache<{
-      data: unknown[];
-      meta: { total: number; page: number; limit: number };
+      items: unknown[];
+      page: number;
+      limit: number;
+      totalPages: number;
     }>(cacheKey);
     if (cached) return cached;
 
+    // Build select fields
+    let selectFields = '';
+    if (fields) {
+      selectFields = fields
+        .split(',')
+        .map((f) => f.trim())
+        .join(' ');
+    }
+
     const skip = (Number(page) - 1) * Number(limit);
-    const [data, total] = await Promise.all([
-      BrandModel.find(filter).skip(skip).limit(Number(limit)).sort(sort).lean(),
+    const brandQuery = BrandModel.find(filter)
+      .skip(skip)
+      .limit(Number(limit))
+      .sort(sort);
+
+    if (selectFields) {
+      brandQuery.select(selectFields);
+    }
+
+    const [items, total] = await Promise.all([
+      brandQuery.lean(),
       BrandModel.countDocuments(filter),
     ]);
 
     const payload = {
-      data,
-      meta: { total, page: Number(page), limit: Number(limit) },
+      items,
+      page: Number(page),
+      limit: Number(limit),
+      totalPages: Math.ceil(total / Number(limit)),
     };
     await setCache(cacheKey, payload);
     return payload;
   }
 
-  static async getById(id: string) {
+  static async getById(id: string, query?: GetBrandByIdQuery) {
     if (!isValidMongoId(id)) throw createError.BadRequest('Invalid brand id');
-    const cacheKey = generateCacheKey({ resource: `${BRAND_RESOURCE}:${id}` });
+
+    const { fields } = query || {};
+
+    const cacheKey = generateCacheKey({
+      resource: `${BRAND_RESOURCE}:${id}`,
+      query: { fields },
+    });
     const cached = await getCache<Record<string, unknown>>(cacheKey);
     if (cached) return cached;
 
-    const brand = await BrandModel.findById(id).lean();
+    // Build select fields
+    let selectFields = '';
+    if (fields) {
+      selectFields = fields
+        .split(',')
+        .map((f) => f.trim())
+        .join(' ');
+    }
+
+    const brandQuery = BrandModel.findById(id);
+
+    if (selectFields) {
+      brandQuery.select(selectFields);
+    }
+
+    const brand = await brandQuery.lean();
     if (!brand) throw createError.NotFound('Brand not found');
     await setCache(cacheKey, brand);
     return brand;

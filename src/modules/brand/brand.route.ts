@@ -14,6 +14,7 @@ import {
 import {
   changeStatusSchema,
   createBrandSchema,
+  getBrandByIdSchema,
   getBrandsQuerySchema,
   updateBrandSchema,
 } from './brand.validation';
@@ -30,7 +31,7 @@ const brandLogoUpload = multerUploader({
 
 // Public routes
 router.get('/', validate(getBrandsQuerySchema), getBrands);
-router.get('/:id', getBrandById);
+router.get('/:id', validate(getBrandByIdSchema), getBrandById);
 
 // Admin only routes
 router.post(

@@ -58,21 +58,21 @@
 
 ## Routes
 
-| Method | Endpoint                            | Description                                                         | Access        | Cache            |
-| ------ | ----------------------------------- | ------------------------------------------------------------------- | ------------- | ---------------- |
-| GET    | /products?search&category&brand     | List all products with optional search, filter, sorting, pagination | Public        | Redis cache      |
-| POST   | /products                           | Create a new product                                                | Admin only    | Invalidate cache |
-| GET    | /products/{id}                      | Retrieve a specific product                                         | Public        | Redis cache      |
-| PUT    | /products/{id}                      | Update a specific product                                           | Admin only    | Invalidate cache |
-| PATCH  | /products/{id}/status               | Change a product's active status                                    | Admin only    | Invalidate cache |
-| DELETE | /products/{id}                      | Delete a specific product                                           | Admin only    | Invalidate cache |
-| POST   | /products/{id}/variants             | Add a new variant to a product                                      | Admin only    | Invalidate cache |
-| PUT    | /products/{id}/variants/{variantId} | Update a specific variant                                           | Admin only    | Invalidate cache |
-| DELETE | /products/{id}/variants/{variantId} | Delete a specific variant                                           | Admin only    | Invalidate cache |
-| POST   | /products/{id}/reviews              | Add a review to a product                                           | Authenticated | Invalidate cache |
-| PUT    | /products/{id}/reviews/{reviewId}   | Update a review                                                     | Authenticated | Invalidate cache |
-| DELETE | /products/{id}/reviews/{reviewId}   | Delete a review                                                     | Authenticated | Invalidate cache |
-| POST   | /products/{id}/faq                  | Add a FAQ to a product                                              | Admin only    | Invalidate cache |
-| PUT    | /products/{id}/faq/{faqId}          | Update a FAQ                                                        | Admin only    | Invalidate cache |
-| DELETE | /products/{id}/faq/{faqId}          | Delete a FAQ                                                        | Admin only    | Invalidate cache |
-| PATCH  | /products/{id}/inventory            | Update product inventory                                            | Admin only    | Invalidate cache |
+| Method | Endpoint                                                           | Description                                                         | Access        | Cache            |
+| ------ | ------------------------------------------------------------------ | ------------------------------------------------------------------- | ------------- | ---------------- |
+| GET    | /products?search&category&brand&fields&sortBy&sortOrder&page&limit | List all products with optional search, filter, sorting, pagination | Public        | Redis cache      |
+| POST   | /products                                                          | Create a new product                                                | Admin only    | Invalidate cache |
+| GET    | /products/{id}?fields                                              | Retrieve a specific product                                         | Public        | Redis cache      |
+| PUT    | /products/{id}                                                     | Update a specific product                                           | Admin only    | Invalidate cache |
+| PATCH  | /products/{id}/status                                              | Change a product's active status                                    | Admin only    | Invalidate cache |
+| DELETE | /products/{id}                                                     | Delete a specific product                                           | Admin only    | Invalidate cache |
+| POST   | /products/{id}/variants                                            | Add a new variant to a product                                      | Admin only    | Invalidate cache |
+| PUT    | /products/{id}/variants/{variantId}                                | Update a specific variant                                           | Admin only    | Invalidate cache |
+| DELETE | /products/{id}/variants/{variantId}                                | Delete a specific variant                                           | Admin only    | Invalidate cache |
+| POST   | /products/{id}/reviews                                             | Add a review to a product                                           | Authenticated | Invalidate cache |
+| PUT    | /products/{id}/reviews/{reviewId}                                  | Update a review                                                     | Authenticated | Invalidate cache |
+| DELETE | /products/{id}/reviews/{reviewId}                                  | Delete a review                                                     | Authenticated | Invalidate cache |
+| POST   | /products/{id}/faq                                                 | Add a FAQ to a product                                              | Admin only    | Invalidate cache |
+| PUT    | /products/{id}/faq/{faqId}                                         | Update a FAQ                                                        | Admin only    | Invalidate cache |
+| DELETE | /products/{id}/faq/{faqId}                                         | Delete a FAQ                                                        | Admin only    | Invalidate cache |
+| PATCH  | /products/{id}/inventory                                           | Update product inventory                                            | Admin only    | Invalidate cache |

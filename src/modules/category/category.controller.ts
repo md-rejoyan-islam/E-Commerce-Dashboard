@@ -10,20 +10,37 @@ export const getCategories = asyncHandler(
     successResponse(res, {
       statusCode: 200,
       message: 'Categories fetched',
-      payload: { ...data },
+      payload: data,
+    });
+  },
+);
+
+export const getCategoriesWithChildren = asyncHandler(
+  async (req: Request, res: Response) => {
+    const is_active =
+      req.query.is_active === 'true'
+        ? true
+        : req.query.is_active === 'false'
+          ? false
+          : undefined;
+    const data = await CategoryService.getCategoriesWithChildren({
+      is_active,
+    });
+    successResponse(res, {
+      statusCode: 200,
+      message: 'Categories with children fetched',
+      payload: { data },
     });
   },
 );
 
 export const getCategoryById = asyncHandler(
   async (req: Request, res: Response) => {
-    const includeParent =
-      req.query.includeParent === 'true'
-        ? true
-        : req.query.includeParent === 'false'
-          ? false
-          : undefined;
-    const data = await CategoryService.getById(req.params.id, includeParent);
+    const { includeParent, fields } = req.query;
+    const data = await CategoryService.getById(req.params.id, {
+      includeParent: includeParent === 'true',
+      fields: fields as string | undefined,
+    });
     successResponse(res, {
       statusCode: 200,
       message: 'Category fetched',

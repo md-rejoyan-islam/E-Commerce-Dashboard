@@ -14,7 +14,8 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const getUserById = asyncHandler(async (req: Request, res: Response) => {
-  const data = await UserService.getById(req.params.id);
+  const fields = req.query.fields as string | undefined;
+  const data = await UserService.getById(req.params.id, fields);
   successResponse(res, {
     statusCode: 200,
     message: 'User fetched',
