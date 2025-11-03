@@ -6,8 +6,12 @@ import { register } from '../middlewares/matrics-middleware';
 import authRouter from '../modules/auth/auth.route';
 import bannerRouter from '../modules/banner/banner.route';
 import brandRouter from '../modules/brand/brand.route';
+import campaignRouter from '../modules/campaign/campaign.route';
 import cartRouter from '../modules/cart/cart.route';
 import categoryRouter from '../modules/category/category.route';
+import couponRouter from '../modules/coupon/coupon.route';
+import offerRouter from '../modules/offer/offer.route';
+import orderRouter from '../modules/order/order.route';
 import productRouter from '../modules/product/product.route';
 import storeRouter from '../modules/store/store.route';
 import userRouter from '../modules/user/user.route';
@@ -68,6 +72,18 @@ router.use('/api/v1/stores', storeRouter);
 
 // banner routes
 router.use('/api/v1/banners', bannerRouter);
+
+// campaign routes
+router.use('/api/v1/campaigns', campaignRouter);
+
+// coupon routes
+router.use('/api/v1/coupons', couponRouter);
+
+// offer routes
+router.use('/api/v1/offers', offerRouter);
+
+// order routes
+router.use('/api/v1/orders', orderRouter);
 
 // 404 route
 router.use('', (req: Request, _res: Response) => {
