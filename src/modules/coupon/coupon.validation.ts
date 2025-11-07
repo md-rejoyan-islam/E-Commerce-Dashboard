@@ -1,4 +1,10 @@
 import z from 'zod';
+import {
+  fieldsSchema,
+  is_activeSchema,
+  paginationSchema,
+  searchSchema,
+} from '../../app/common-schema';
 import CouponModel from './coupon.model';
 
 // Valid coupon fields that can be requested
@@ -51,37 +57,10 @@ export const createCouponSchema = z.object({
 
 // Get coupons query schema
 export const getCouponsQuerySchema = z.object({
-  query: z.object({
-    search: z.string().optional(),
-    is_active: z
-      .enum(['true', 'false'], {
-        error: () => {
-          throw new Error('is_active must be true or false');
-        },
-      })
-      .optional(),
-    fields: z
-      .string()
-      .optional()
-      .refine(
-        (fields) => {
-          if (!fields) return true;
-          const requestedFields = fields
-            .split(',')
-            .map((f: string) => f.trim());
-          const invalidFields = requestedFields.filter(
-            (field: string) => !validCouponFields.includes(field),
-          );
-          return invalidFields.length === 0;
-        },
-        {
-          message: `Invalid field(s) requested. Valid fields are: ${validCouponFields.join(', ')}`,
-        },
-      ),
-    sortBy: z.string().optional(),
-    sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
-    page: z.coerce.number().int().positive().default(1).optional(),
-    limit: z.coerce.number().int().positive().max(100).default(10).optional(),
+  query: paginationSchema.extend({
+    search: searchSchema,
+    is_active: is_activeSchema,
+    fields: fieldsSchema(validCouponFields),
   }),
 });
 
@@ -91,24 +70,7 @@ export const getCouponByIdSchema = z.object({
     id: z.string().min(1, 'Coupon ID is required'),
   }),
   query: z.object({
-    fields: z
-      .string()
-      .optional()
-      .refine(
-        (fields) => {
-          if (!fields) return true;
-          const requestedFields = fields
-            .split(',')
-            .map((f: string) => f.trim());
-          const invalidFields = requestedFields.filter(
-            (field: string) => !validCouponFields.includes(field),
-          );
-          return invalidFields.length === 0;
-        },
-        {
-          message: `Invalid field(s) requested. Valid fields are: ${validCouponFields.join(', ')}`,
-        },
-      ),
+    fields: fieldsSchema(validCouponFields),
   }),
 });
 

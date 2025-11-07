@@ -76,7 +76,7 @@ export const clearCart = asyncHandler(
 
 export const getAllCarts = asyncHandler(
   async (req: IRequestWithUser, res: Response) => {
-    const query = req.query as unknown as GetAllCartsQuery;
+    const query = req.query as GetAllCartsQuery;
     const result = await CartService.getAllCarts(query);
 
     return successResponse(res, {
@@ -90,7 +90,7 @@ export const getAllCarts = asyncHandler(
 export const getUserCart = asyncHandler(
   async (req: IRequestWithUser, res: Response) => {
     const { userId } = req.params;
-    const query = req.query as unknown as GetCartQuery;
+    const query = req.query as GetCartQuery;
     const cart = await CartService.getCartByUserId(userId, query);
 
     return successResponse(res, {

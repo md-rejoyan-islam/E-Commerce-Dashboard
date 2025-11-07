@@ -1,4 +1,10 @@
 import z from 'zod';
+import {
+  fieldsSchema,
+  is_activeSchema,
+  paginationSchema,
+  searchSchema,
+} from '../../app/common-schema';
 import OfferModel from './offer.model';
 
 // Valid offer fields that can be requested
@@ -33,15 +39,9 @@ export const createOfferSchema = z.object({
 
 // Get offers query schema
 export const getOffersQuerySchema = z.object({
-  query: z.object({
-    search: z.string().optional(),
-    is_active: z
-      .enum(['true', 'false'], {
-        error: () => {
-          throw new Error('is_active must be true or false');
-        },
-      })
-      .optional(),
+  query: paginationSchema.extend({
+    search: searchSchema,
+    is_active: is_activeSchema,
     includeProducts: z
       .enum(['true', 'false'], {
         error: () => {
@@ -49,28 +49,7 @@ export const getOffersQuerySchema = z.object({
         },
       })
       .optional(),
-    fields: z
-      .string()
-      .optional()
-      .refine(
-        (fields) => {
-          if (!fields) return true;
-          const requestedFields = fields
-            .split(',')
-            .map((f: string) => f.trim());
-          const invalidFields = requestedFields.filter(
-            (field: string) => !validOfferFields.includes(field),
-          );
-          return invalidFields.length === 0;
-        },
-        {
-          message: `Invalid field(s) requested. Valid fields are: ${validOfferFields.join(', ')}`,
-        },
-      ),
-    sortBy: z.string().optional(),
-    sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
-    page: z.coerce.number().int().positive().default(1).optional(),
-    limit: z.coerce.number().int().positive().max(100).default(10).optional(),
+    fields: fieldsSchema(validOfferFields),
   }),
 });
 
@@ -87,24 +66,7 @@ export const getOfferByIdSchema = z.object({
         },
       })
       .optional(),
-    fields: z
-      .string()
-      .optional()
-      .refine(
-        (fields) => {
-          if (!fields) return true;
-          const requestedFields = fields
-            .split(',')
-            .map((f: string) => f.trim());
-          const invalidFields = requestedFields.filter(
-            (field: string) => !validOfferFields.includes(field),
-          );
-          return invalidFields.length === 0;
-        },
-        {
-          message: `Invalid field(s) requested. Valid fields are: ${validOfferFields.join(', ')}`,
-        },
-      ),
+    fields: fieldsSchema(validOfferFields),
   }),
 });
 

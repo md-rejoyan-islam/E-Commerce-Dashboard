@@ -26,7 +26,7 @@ import {
  */
 export const listCoupons = asyncHandler(
   async (req: IRequestWithUser, res: Response) => {
-    const query = req.query as unknown as GetCouponsQuery;
+    const query = req.query as GetCouponsQuery;
     const result = await CouponService.list(query);
 
     return successResponse(res, {

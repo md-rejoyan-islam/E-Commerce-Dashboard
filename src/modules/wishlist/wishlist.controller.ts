@@ -43,7 +43,7 @@ export const getItem = asyncHandler(
   async (req: IRequestWithUser, res: Response) => {
     const userId = req.user?._id as string;
     const { id } = req.params;
-    const query = req.query as unknown as GetWishlistQuery;
+    const query = req.query as GetWishlistQuery;
 
     const item = await WishlistService.getItem(userId, id, query);
 
@@ -86,7 +86,7 @@ export const clearWishlist = asyncHandler(
 
 export const getAllWishlists = asyncHandler(
   async (req: IRequestWithUser, res: Response) => {
-    const query = req.query as unknown as GetAllWishlistItemsQuery;
+    const query = req.query as GetAllWishlistItemsQuery;
 
     const result = await WishlistService.getAllWishlists(query);
 
@@ -101,7 +101,7 @@ export const getAllWishlists = asyncHandler(
 export const getUserWishlist = asyncHandler(
   async (req: IRequestWithUser, res: Response) => {
     const { userId } = req.params;
-    const query = req.query as unknown as GetUserWishlistQuery['query'];
+    const query = req.query as GetUserWishlistQuery['query'];
 
     const wishlist = await WishlistService.getWishlistByUserId(userId, query);
 

@@ -14,6 +14,7 @@ import {
   changeMyPasswordSchema,
   getMeSchema,
   loginSchema,
+  refreshTokenSchema,
   registerSchema,
   updateMeSchema,
 } from './auth.validation';
@@ -22,7 +23,7 @@ const router = Router();
 
 router.post('/register', isLoggedOut, validate(registerSchema), register);
 router.post('/login', isLoggedOut, validate(loginSchema), login);
-router.post('/refresh', refresh);
+router.post('/refresh', validate(refreshTokenSchema), refresh);
 router.post('/logout', isLoggedIn, logout);
 router.get('/me', isLoggedIn, validate(getMeSchema), me);
 router.put('/me', isLoggedIn, validate(updateMeSchema), updateMe);

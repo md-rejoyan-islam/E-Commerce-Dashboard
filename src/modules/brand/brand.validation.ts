@@ -1,4 +1,10 @@
 import z from 'zod';
+import {
+  fieldsSchema,
+  is_activeSchema,
+  paginationSchema,
+  searchSchema,
+} from '../../app/common-schema';
 import BrandModel from './brand.model';
 
 // Valid brand fields that can be requested
@@ -49,8 +55,8 @@ export const changeStatusSchema = z.object({
 });
 
 export const getBrandsQuerySchema = z.object({
-  query: z.object({
-    search: z.string().optional(),
+  query: paginationSchema.extend({
+    search: searchSchema,
     featured: z
       .enum(['true', 'false'], {
         error: () => {
@@ -58,35 +64,8 @@ export const getBrandsQuerySchema = z.object({
         },
       })
       .optional(),
-    is_active: z
-      .enum(['true', 'false'], {
-        error: () => {
-          throw new Error('is_active must be true or false');
-        },
-      })
-      .optional(),
-    fields: z
-      .string()
-      .optional()
-      .refine(
-        (fields) => {
-          if (!fields) return true;
-          const requestedFields = fields
-            .split(',')
-            .map((f: string) => f.trim());
-          const invalidFields = requestedFields.filter(
-            (field: string) => !validBrandFields.includes(field),
-          );
-          return invalidFields.length === 0;
-        },
-        {
-          message: `Invalid field(s) requested. Valid fields are: ${validBrandFields.join(', ')}`,
-        },
-      ),
-    page: z.coerce.number().int().positive().default(1).optional(),
-    limit: z.coerce.number().int().positive().max(100).default(10).optional(),
-    sortBy: z.string().optional(),
-    sortOrder: z.enum(['asc', 'desc']).optional(),
+    is_active: is_activeSchema,
+    fields: fieldsSchema(validBrandFields),
   }),
 });
 
@@ -95,24 +74,7 @@ export const getBrandByIdSchema = z.object({
     id: z.string().min(1, 'Brand ID is required'),
   }),
   query: z.object({
-    fields: z
-      .string()
-      .optional()
-      .refine(
-        (fields) => {
-          if (!fields) return true;
-          const requestedFields = fields
-            .split(',')
-            .map((f: string) => f.trim());
-          const invalidFields = requestedFields.filter(
-            (field: string) => !validBrandFields.includes(field),
-          );
-          return invalidFields.length === 0;
-        },
-        {
-          message: `Invalid field(s) requested. Valid fields are: ${validBrandFields.join(', ')}`,
-        },
-      ),
+    fields: fieldsSchema(validBrandFields),
   }),
 });
 

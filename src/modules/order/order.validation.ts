@@ -1,4 +1,5 @@
 import z from 'zod';
+import { fieldsSchema, paginationSchema } from '../../app/common-schema';
 import OrderModel from './order.model';
 
 // Valid order fields that can be requested
@@ -65,31 +66,10 @@ export const createOrderSchema = z.object({
 
 // Get orders query schema
 export const getOrdersQuerySchema = z.object({
-  query: z.object({
+  query: paginationSchema.extend({
     user_id: z.string().optional(),
     order_status: orderStatusEnum.optional(),
-    fields: z
-      .string()
-      .optional()
-      .refine(
-        (fields) => {
-          if (!fields) return true;
-          const requestedFields = fields
-            .split(',')
-            .map((f: string) => f.trim());
-          const invalidFields = requestedFields.filter(
-            (field: string) => !validOrderFields.includes(field),
-          );
-          return invalidFields.length === 0;
-        },
-        {
-          message: `Invalid field(s) requested. Valid fields are: ${validOrderFields.join(', ')}`,
-        },
-      ),
-    sortBy: z.string().optional(),
-    sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
-    page: z.coerce.number().int().positive().default(1).optional(),
-    limit: z.coerce.number().int().positive().max(100).default(10).optional(),
+    fields: fieldsSchema(validOrderFields),
   }),
 });
 
@@ -99,24 +79,7 @@ export const getOrderByIdSchema = z.object({
     id: z.string().min(1, 'Order ID is required'),
   }),
   query: z.object({
-    fields: z
-      .string()
-      .optional()
-      .refine(
-        (fields) => {
-          if (!fields) return true;
-          const requestedFields = fields
-            .split(',')
-            .map((f: string) => f.trim());
-          const invalidFields = requestedFields.filter(
-            (field: string) => !validOrderFields.includes(field),
-          );
-          return invalidFields.length === 0;
-        },
-        {
-          message: `Invalid field(s) requested. Valid fields are: ${validOrderFields.join(', ')}`,
-        },
-      ),
+    fields: fieldsSchema(validOrderFields),
   }),
 });
 
@@ -182,29 +145,8 @@ export const getUserOrdersSchema = z.object({
   params: z.object({
     user_id: z.string().min(1, 'User ID is required'),
   }),
-  query: z.object({
-    fields: z
-      .string()
-      .optional()
-      .refine(
-        (fields) => {
-          if (!fields) return true;
-          const requestedFields = fields
-            .split(',')
-            .map((f: string) => f.trim());
-          const invalidFields = requestedFields.filter(
-            (field: string) => !validOrderFields.includes(field),
-          );
-          return invalidFields.length === 0;
-        },
-        {
-          message: `Invalid field(s) requested. Valid fields are: ${validOrderFields.join(', ')}`,
-        },
-      ),
-    sortBy: z.string().optional(),
-    sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
-    page: z.coerce.number().int().positive().default(1).optional(),
-    limit: z.coerce.number().int().positive().max(100).default(10).optional(),
+  query: paginationSchema.extend({
+    fields: fieldsSchema(validOrderFields),
   }),
 });
 

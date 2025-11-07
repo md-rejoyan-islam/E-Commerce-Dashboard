@@ -1,4 +1,10 @@
 import z from 'zod';
+import {
+  fieldsSchema,
+  is_activeSchema,
+  paginationSchema,
+  searchSchema,
+} from '../../app/common-schema';
 import CampaignModel from './campaign.model';
 
 // Valid campaign fields that can be requested
@@ -48,15 +54,9 @@ export const createCampaignSchema = z.object({
 
 // Get campaigns query schema
 export const getCampaignsQuerySchema = z.object({
-  query: z.object({
-    search: z.string().optional(),
-    is_active: z
-      .enum(['true', 'false'], {
-        error: () => {
-          throw new Error('is_active must be true or false');
-        },
-      })
-      .optional(),
+  query: paginationSchema.extend({
+    search: searchSchema,
+    is_active: is_activeSchema,
     includeProducts: z
       .enum(['true', 'false'], {
         error: () => {
@@ -64,28 +64,7 @@ export const getCampaignsQuerySchema = z.object({
         },
       })
       .optional(),
-    fields: z
-      .string()
-      .optional()
-      .refine(
-        (fields) => {
-          if (!fields) return true;
-          const requestedFields = fields
-            .split(',')
-            .map((f: string) => f.trim());
-          const invalidFields = requestedFields.filter(
-            (field: string) => !validCampaignFields.includes(field),
-          );
-          return invalidFields.length === 0;
-        },
-        {
-          message: `Invalid field(s) requested. Valid fields are: ${validCampaignFields.join(', ')}`,
-        },
-      ),
-    sortBy: z.string().optional(),
-    sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
-    page: z.coerce.number().int().positive().default(1).optional(),
-    limit: z.coerce.number().int().positive().max(100).default(10).optional(),
+    fields: fieldsSchema(validCampaignFields),
   }),
 });
 
@@ -102,24 +81,7 @@ export const getCampaignByIdSchema = z.object({
         },
       })
       .optional(),
-    fields: z
-      .string()
-      .optional()
-      .refine(
-        (fields) => {
-          if (!fields) return true;
-          const requestedFields = fields
-            .split(',')
-            .map((f: string) => f.trim());
-          const invalidFields = requestedFields.filter(
-            (field: string) => !validCampaignFields.includes(field),
-          );
-          return invalidFields.length === 0;
-        },
-        {
-          message: `Invalid field(s) requested. Valid fields are: ${validCampaignFields.join(', ')}`,
-        },
-      ),
+    fields: fieldsSchema(validCampaignFields),
   }),
 });
 

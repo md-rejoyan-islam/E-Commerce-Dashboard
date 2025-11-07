@@ -58,7 +58,7 @@ export const createOrder = asyncHandler(
  */
 export const listOrders = asyncHandler(
   async (req: IRequestWithUser, res: Response) => {
-    const query = req.query as unknown as GetOrdersQuery;
+    const query = req.query as GetOrdersQuery;
     const result = await OrderService.list(query);
 
     return successResponse(res, {
@@ -229,7 +229,7 @@ export const refundOrder = asyncHandler(
 export const getUserOrders = asyncHandler(
   async (req: IRequestWithUser, res: Response) => {
     const { user_id } = req.params;
-    const query = req.query as unknown as GetUserOrdersQuery;
+    const query = req.query as GetUserOrdersQuery;
     const result = await OrderService.getUserOrders(user_id, query);
 
     return successResponse(res, {
@@ -250,7 +250,7 @@ export const getUserOrders = asyncHandler(
  */
 export const getOrderStats = asyncHandler(
   async (req: IRequestWithUser, res: Response) => {
-    const query = req.query as unknown as GetOrderStatsQuery;
+    const query = req.query as GetOrderStatsQuery;
     const stats = await OrderService.getStats(query);
 
     return successResponse(res, {
@@ -271,7 +271,7 @@ export const getOrderStats = asyncHandler(
  */
 export const getOrderReport = asyncHandler(
   async (req: IRequestWithUser, res: Response) => {
-    const query = req.query as unknown as GetOrderStatsQuery;
+    const query = req.query as GetOrderStatsQuery;
     const report = await OrderService.getReport(query);
 
     return successResponse(res, {

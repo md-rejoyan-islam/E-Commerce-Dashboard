@@ -1,4 +1,5 @@
 import z from 'zod';
+import { fieldsSchema, paginationSchema } from '../../app/common-schema';
 import WishlistModel from './wishlist.model';
 
 // Valid wishlist fields that can be requested
@@ -31,24 +32,7 @@ export const getWishlistItemSchema = z.object({
         },
       })
       .optional(),
-    fields: z
-      .string()
-      .optional()
-      .refine(
-        (fields) => {
-          if (!fields) return true;
-          const requestedFields = fields
-            .split(',')
-            .map((f: string) => f.trim());
-          const invalidFields = requestedFields.filter(
-            (field: string) => !validWishlistFields.includes(field),
-          );
-          return invalidFields.length === 0;
-        },
-        {
-          message: `Invalid field(s) requested. Valid fields are: ${validWishlistFields.join(', ')}`,
-        },
-      ),
+    fields: fieldsSchema(validWishlistFields),
   }),
 });
 
@@ -76,30 +60,13 @@ export const getWishlistSchema = z.object({
         },
       })
       .optional(),
-    fields: z
-      .string()
-      .optional()
-      .refine(
-        (fields) => {
-          if (!fields) return true;
-          const requestedFields = fields
-            .split(',')
-            .map((f: string) => f.trim());
-          const invalidFields = requestedFields.filter(
-            (field: string) => !validWishlistFields.includes(field),
-          );
-          return invalidFields.length === 0;
-        },
-        {
-          message: `Invalid field(s) requested. Valid fields are: ${validWishlistFields.join(', ')}`,
-        },
-      ),
+    fields: fieldsSchema(validWishlistFields),
   }),
 });
 
 // Get all wishlist items schema (admin)
 export const getAllWishlistItemsSchema = z.object({
-  query: z.object({
+  query: paginationSchema.extend({
     includeUser: z
       .enum(['true', 'false'], {
         error: () => {
@@ -114,26 +81,7 @@ export const getAllWishlistItemsSchema = z.object({
         },
       })
       .optional(),
-    fields: z
-      .string()
-      .optional()
-      .refine(
-        (fields) => {
-          if (!fields) return true;
-          const requestedFields = fields
-            .split(',')
-            .map((f: string) => f.trim());
-          const invalidFields = requestedFields.filter(
-            (field: string) => !validWishlistFields.includes(field),
-          );
-          return invalidFields.length === 0;
-        },
-        {
-          message: `Invalid field(s) requested. Valid fields are: ${validWishlistFields.join(', ')}`,
-        },
-      ),
-    page: z.coerce.number().int().positive().default(1).optional(),
-    limit: z.coerce.number().int().positive().max(100).default(10).optional(),
+    fields: fieldsSchema(validWishlistFields),
   }),
 });
 
@@ -149,34 +97,17 @@ export const getUserWishlistSchema = z.object({
           throw new Error('includeUser must be true or false');
         },
       })
-      .optional()
-      .transform((val) => val === 'true'),
+      .transform((val) => val === 'true')
+      .optional(),
     includeProduct: z
       .enum(['true', 'false'], {
         error: () => {
           throw new Error('includeUser must be true or false');
         },
       })
-      .optional()
-      .transform((val) => val === 'true'),
-    fields: z
-      .string()
-      .optional()
-      .refine(
-        (fields) => {
-          if (!fields) return true;
-          const requestedFields = fields
-            .split(',')
-            .map((f: string) => f.trim());
-          const invalidFields = requestedFields.filter(
-            (field: string) => !validWishlistFields.includes(field),
-          );
-          return invalidFields.length === 0;
-        },
-        {
-          message: `Invalid field(s) requested. Valid fields are: ${validWishlistFields.join(', ')}`,
-        },
-      ),
+      .transform((val) => val === 'true')
+      .optional(),
+    fields: fieldsSchema(validWishlistFields),
   }),
 });
 

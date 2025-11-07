@@ -27,7 +27,7 @@ import {
  */
 export const listOffers = asyncHandler(
   async (req: IRequestWithUser, res: Response) => {
-    const query = req.query as unknown as GetOffersQuery;
+    const query = req.query as GetOffersQuery;
     const result = await OfferService.list(query);
 
     return successResponse(res, {

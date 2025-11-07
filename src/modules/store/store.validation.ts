@@ -1,4 +1,10 @@
 import z from 'zod';
+import {
+  fieldsSchema,
+  is_activeSchema,
+  paginationSchema,
+  searchSchema,
+} from '../../app/common-schema';
 import StoreModel from './store.model';
 
 // Valid store fields that can be requested
@@ -24,37 +30,10 @@ export const createStoreSchema = z.object({
 
 // Get stores query schema
 export const getStoresQuerySchema = z.object({
-  query: z.object({
-    is_active: z
-      .enum(['true', 'false'], {
-        error: () => {
-          throw new Error('includeUser must be true or false');
-        },
-      })
-      .optional(),
-    search: z.string().optional(),
-    fields: z
-      .string()
-      .optional()
-      .refine(
-        (fields) => {
-          if (!fields) return true;
-          const requestedFields = fields
-            .split(',')
-            .map((f: string) => f.trim());
-          const invalidFields = requestedFields.filter(
-            (field: string) => !validStoreFields.includes(field),
-          );
-          return invalidFields.length === 0;
-        },
-        {
-          message: `Invalid field(s) requested. Valid fields are: ${validStoreFields.join(', ')}`,
-        },
-      ),
-    sortBy: z.string().optional().default('createdAt'),
-    sortOrder: z.enum(['asc', 'desc']).optional().default('asc'),
-    page: z.coerce.number().int().positive().default(1).optional(),
-    limit: z.coerce.number().int().positive().max(100).default(10).optional(),
+  query: paginationSchema.extend({
+    is_active: is_activeSchema,
+    search: searchSchema,
+    fields: fieldsSchema(validStoreFields),
   }),
 });
 

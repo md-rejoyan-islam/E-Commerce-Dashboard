@@ -1,27 +1,67 @@
 import z from 'zod';
+import {
+  fieldsSchema,
+  is_activeSchema,
+  paginationSchema,
+  searchSchema,
+} from '../../app/common-schema';
 import BannerModel from './banner.model';
 
 // Valid banner fields that can be requested
 const validBannerFields = Object.keys(BannerModel.schema.paths);
 
 // Banner type enum
-const bannerTypeEnum = z.enum(['popup', 'slider', 'static']);
+const bannerTypeEnum = z.enum(['popup', 'slider', 'static'], {
+  error: () => {
+    throw new Error('Banner type must be one of: popup, slider, static');
+  },
+});
 
 // Create banner schema
 export const createBannerSchema = z.object({
   body: z.object({
-    title: z.string().min(1, 'Banner title is required').trim(),
-    description: z.string().min(1, 'Banner description is required'),
-    image: z.string().min(1, 'Banner image is required'),
-    link: z.string().min(1, 'Banner link is required'),
-    is_active: z.boolean().optional().default(true),
+    title: z
+      .string({
+        error: (iss) => {
+          if (!iss?.input) {
+            return 'Banner title is required';
+          } else if (iss?.code === 'invalid_type') {
+            return 'Banner title must be a string';
+          }
+        },
+      })
+      .min(1, 'Banner title is required')
+      .trim(),
+    description: z
+      .string({
+        error: (iss) => {
+          if (!iss?.input) {
+            return 'Banner description is required';
+          } else if (iss?.code === 'invalid_type') {
+            return 'Banner description must be a string';
+          }
+        },
+      })
+      .min(1, 'Banner description is required'),
+    link: z
+      .url({
+        error: (iss) => {
+          if (iss?.code === 'invalid_type') {
+            return 'Banner link must be a valid URL';
+          } else if (iss?.code === 'invalid_format') {
+            return 'Banner link must be a valid URL';
+          }
+        },
+      })
+      .optional(),
+    is_active: is_activeSchema.default('true'),
     type: bannerTypeEnum,
   }),
 });
 
 // Get banners query schema
 export const getBannersQuerySchema = z.object({
-  query: z.object({
+  query: paginationSchema.extend({
     type: bannerTypeEnum.optional(),
     is_active: z
       .enum(['true', 'false'], {
@@ -30,29 +70,8 @@ export const getBannersQuerySchema = z.object({
         },
       })
       .optional(),
-    search: z.string().optional(),
-    fields: z
-      .string()
-      .optional()
-      .refine(
-        (fields) => {
-          if (!fields) return true;
-          const requestedFields = fields
-            .split(',')
-            .map((f: string) => f.trim());
-          const invalidFields = requestedFields.filter(
-            (field: string) => !validBannerFields.includes(field),
-          );
-          return invalidFields.length === 0;
-        },
-        {
-          message: `Invalid field(s) requested. Valid fields are: ${validBannerFields.join(', ')}`,
-        },
-      ),
-    sortBy: z.string().optional(),
-    sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
-    page: z.coerce.number().int().positive().default(1).optional(),
-    limit: z.coerce.number().int().positive().max(100).default(10).optional(),
+    search: searchSchema,
+    fields: fieldsSchema(validBannerFields),
   }),
 });
 
@@ -62,24 +81,7 @@ export const getBannerByIdSchema = z.object({
     id: z.string().min(1, 'Banner ID is required'),
   }),
   query: z.object({
-    fields: z
-      .string()
-      .optional()
-      .refine(
-        (fields) => {
-          if (!fields) return true;
-          const requestedFields = fields
-            .split(',')
-            .map((f: string) => f.trim());
-          const invalidFields = requestedFields.filter(
-            (field: string) => !validBannerFields.includes(field),
-          );
-          return invalidFields.length === 0;
-        },
-        {
-          message: `Invalid field(s) requested. Valid fields are: ${validBannerFields.join(', ')}`,
-        },
-      ),
+    fields: fieldsSchema(validBannerFields),
   }),
 });
 
@@ -89,11 +91,40 @@ export const updateBannerSchema = z.object({
     id: z.string().min(1, 'Banner ID is required'),
   }),
   body: z.object({
-    title: z.string().min(1, 'Banner title is required').trim().optional(),
-    description: z.string().min(1, 'Banner description is required').optional(),
-    image: z.string().min(1, 'Banner image is required').optional(),
-    link: z.string().min(1, 'Banner link is required').optional(),
-    is_active: z.boolean().optional(),
+    title: z
+      .string({
+        error: (iss) => {
+          if (iss?.code === 'invalid_type') {
+            return 'Banner title must be a string';
+          }
+        },
+      })
+      .min(1, 'Banner title is required')
+      .trim()
+      .optional(),
+    description: z
+      .string({
+        error: (iss) => {
+          if (iss?.code === 'invalid_type') {
+            return 'Banner description must be a string';
+          }
+        },
+      })
+      .min(1, 'Banner description is required')
+      .optional(),
+    link: z
+      .url({
+        error: (iss) => {
+          if (iss?.code === 'invalid_type') {
+            return 'Banner link must be a valid URL';
+          } else if (iss?.code === 'invalid_format') {
+            return 'Banner link must be a valid URL';
+          }
+        },
+      })
+      .min(1, 'Banner link is required')
+      .optional(),
+    is_active: is_activeSchema,
     type: bannerTypeEnum.optional(),
   }),
 });

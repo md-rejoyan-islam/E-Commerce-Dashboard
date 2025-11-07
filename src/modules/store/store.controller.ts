@@ -13,7 +13,7 @@ import {
 
 export const listStores = asyncHandler(
   async (req: IRequestWithUser, res: Response) => {
-    const query = req.query as unknown as GetStoresQuery;
+    const query = req.query as GetStoresQuery;
     const result = await StoreService.list(query);
 
     return successResponse(res, {

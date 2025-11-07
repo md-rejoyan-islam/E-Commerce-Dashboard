@@ -13,7 +13,7 @@ import {
 
 export const listBanners = asyncHandler(
   async (req: IRequestWithUser, res: Response) => {
-    const query = req.query as unknown as GetBannersQuery;
+    const query = req.query as GetBannersQuery;
     const result = await BannerService.list(query);
 
     return successResponse(res, {

@@ -4,6 +4,7 @@ import { connectDB } from './config/db';
 
 import app from './app/app';
 import secret from './app/secret';
+import { connectRedis } from './config/redis';
 import { logger } from './utils/logger';
 
 const PORT = secret.port;
@@ -13,6 +14,7 @@ const server = http.createServer(app);
 const startServer = async () => {
   try {
     await connectDB();
+    await connectRedis();
     server.listen(PORT, () => {
       logger.info({
         message: `Server is running on http://localhost:${PORT}`,

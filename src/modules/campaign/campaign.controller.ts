@@ -27,7 +27,7 @@ import {
  */
 export const listCampaigns = asyncHandler(
   async (req: IRequestWithUser, res: Response) => {
-    const query = req.query as unknown as GetCampaignsQuery;
+    const query = req.query as GetCampaignsQuery;
     const result = await CampaignService.list(query);
 
     return successResponse(res, {

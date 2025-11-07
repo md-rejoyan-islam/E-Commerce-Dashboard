@@ -7,7 +7,7 @@ import { GetProductsQuery } from './product.validation';
 
 export const getProducts = asyncHandler(
   async (req: IRequestWithUser, res: Response) => {
-    const query = req.query as unknown as GetProductsQuery;
+    const query = req.query as GetProductsQuery;
     const result = await ProductService.list(query);
 
     return successResponse(res, {

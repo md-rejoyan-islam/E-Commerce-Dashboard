@@ -1,5 +1,6 @@
 import { createClient, RedisClientType } from 'redis';
 import secret from '../app/secret';
+import { logger } from '../utils/logger';
 
 const redisClient: RedisClientType = createClient({
   url: secret.redis.redis_url,
@@ -18,7 +19,7 @@ async function connectRedis(): Promise<void> {
   if (!redisClient.isOpen) {
     try {
       await redisClient.connect();
-      console.log('Connected to Redis successfully');
+      logger.info({ message: 'Connected to Redis successfully' });
     } catch (error) {
       console.error('Failed to connect to Redis:', error);
       throw error;

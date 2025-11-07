@@ -25,7 +25,7 @@
   "author": "Md Rejoyan Islam",
   "authorEmail": "rejoyanislam0014@gmail.com",
   "license": "ISC",
-  "packageManager": "pnpm@10.18.3",
+  "packageManager": "pnpm@10.20.0",
   "dependencies": {
     "@eslint/js": "^9.38.0",
     "bcryptjs": "^3.0.2",
