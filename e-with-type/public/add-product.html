@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Add Product - E-Commerce</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-50">
+    <div class="max-w-6xl mx-auto p-6">
+      <div class="bg-white shadow-md rounded-lg p-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-4">
+          Add New Product
+        </h1>
+
+        <!-- Success Message -->
+        <div
+          id="successMessage"
+          class="hidden bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6"
+        >
+          <p class="font-semibold">Success!</p>
+          <p>Product created successfully!</p>
+        </div>
+
+        <!-- Error Message -->
+        <div
+          id="errorMessage"
+          class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6"
+        >
+          <p class="font-semibold">Error!</p>
+          <p id="errorText"></p>
+        </div>
+
+        <form id="productForm">
+          <!-- Basic Information -->
+          <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b pb-2">
+              Basic Information
+            </h2>
+
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >Product Name <span class="text-red-500">*</span></label
+              >
+              <input
+                type="text"
+                name="name"
+                id="name"
+                required
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter product name"
+              />
+            </div>
+
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >Slug</label
+              >
+              <input
+                type="text"
+                name="slug"
+                id="slug"
+                pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="product-slug (auto-generated if empty)"
+              />
+              <p class="text-xs text-gray-500 mt-1">
+                Leave empty to auto-generate from name. Must be lowercase with
+                hyphens (e.g., my-product-name)
+              </p>
+            </div>
+
+            <div class="mt-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >Description <span class="text-red-500">*</span></label
+              >
+              <textarea
+                name="description"
+                id="description"
+                required
+                rows="4"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Detailed product description"
+              ></textarea>
+            </div>
+          </div>
+
+          <!-- Category & Brand -->
+          <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b pb-2">
+              Category & Brand
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2"
+                  >Category ID <span class="text-red-500">*</span></label
+                >
+                <input
+                  type="text"
+                  name="category"
+                  id="category"
+                  required
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="MongoDB ObjectId (e.g., 507f1f77bcf86cd799439011)"
+                />
+                <p class="text-xs text-gray-500 mt-1">
+                  Enter the category's MongoDB ObjectId
+                </p>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2"
+                  >Brand ID <span class="text-red-500">*</span></label
+                >
+                <input
+                  type="text"
+                  name="brand"
+                  id="brand"
+                  required
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="MongoDB ObjectId (e.g., 507f1f77bcf86cd799439011)"
+                />
+                <p class="text-xs text-gray-500 mt-1">
+                  Enter the brand's MongoDB ObjectId
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Options -->
+          <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b pb-2">
+              Options
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="flex items-center">
+                <input
+                  type="checkbox"
+                  name="featured"
+                  id="featured"
+                  class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label for="featured" class="ml-2 text-sm text-gray-700"
+                  >Featured Product</label
+                >
+              </div>
+
+              <div class="flex items-center">
+                <input
+                  type="checkbox"
+                  name="is_active"
+                  id="is_active"
+                  checked
+                  class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label for="is_active" class="ml-2 text-sm text-gray-700"
+                  >Active</label
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Variants -->
+          <div class="mb-8">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-xl font-semibold text-gray-700 border-b pb-2">
+                Product Variants <span class="text-red-500">*</span>
+              </h2>
+              <button
+                type="button"
+                onclick="addVariant()"
+                class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition"
+              >
+                + Add Variant
+              </button>
+            </div>
+
+            <div id="variantsContainer" class="space-y-6">
+              <!-- Variant templates will be added here -->
+            </div>
+
+            <p class="text-sm text-gray-600 mt-4">
+              <strong>Note:</strong> At least one variant is required. Each
+              variant must have a unique SKU.
+            </p>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="flex justify-end gap-4">
+            <button
+              type="button"
+              onclick="resetForm()"
+              class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition"
+            >
+              Reset
+            </button>
+            <button
+              type="submit"
+              class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg transition"
+            >
+              Create Product
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      let variantCount = 0;
+
+      // Auto-generate slug from name
+      document.getElementById('name').addEventListener('input', function (e) {
+        const slug = e.target.value
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '');
+        document.getElementById('slug').value = slug;
+      });
+
+      // Add a new variant
+      function addVariant() {
+        variantCount++;
+        const variantHTML = `
+          <div class="border border-gray-300 rounded-lg p-6 relative" id="variant-${variantCount}">
+            <button
+              type="button"
+              onclick="removeVariant(${variantCount})"
+              class="absolute top-4 right-4 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition"
+            >
+              Remove
+            </button>
+
+            <h3 class="text-lg font-semibold text-gray-700 mb-4">
+              Variant #${variantCount}
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  SKU <span class="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="variants[${variantCount}][sku]"
+                  required
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="PROD-001"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Attributes (JSON)
+                </label>
+                <input
+                  type="text"
+                  name="variants[${variantCount}][attributes]"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder='{"color": "red", "size": "M"}'
+                />
+                <p class="text-xs text-gray-500 mt-1">
+                  Optional: e.g., {"color": "red", "size": "M"}
+                </p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Price <span class="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  name="variants[${variantCount}][price]"
+                  required
+                  step="0.01"
+                  min="0"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="99.99"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Sale Price
+                </label>
+                <input
+                  type="number"
+                  name="variants[${variantCount}][sale_price]"
+                  step="0.01"
+                  min="0"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="79.99"
+                />
+              </div>
+            </div>
+
+            <!-- Variant Images -->
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Variant Images
+              </label>
+              <input
+                type="file"
+                id="variantImages-${variantCount}"
+                name="variants[${variantCount}][images]"
+                accept="image/*"
+                multiple
+                onchange="previewVariantImages(${variantCount})"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <p class="text-xs text-gray-500 mt-1">
+                You can select multiple images (max 300KB each)
+              </p>
+              <div id="variantImagePreview-${variantCount}" class="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2">
+                <!-- Image previews will appear here -->
+              </div>
+            </div>
+
+            <!-- Inventory -->
+            <div class="border-t pt-4 mt-4">
+              <h4 class="text-md font-semibold text-gray-700 mb-3">Inventory</h4>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Available Quantity
+                  </label>
+                  <input
+                    type="number"
+                    name="variants[${variantCount}][inventory][quantity_available]"
+                    min="0"
+                    value="0"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Reserved Quantity
+                  </label>
+                  <input
+                    type="number"
+                    name="variants[${variantCount}][inventory][quantity_reserved]"
+                    min="0"
+                    value="0"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Damaged Quantity
+                  </label>
+                  <input
+                    type="number"
+                    name="variants[${variantCount}][inventory][quantity_damaged]"
+                    min="0"
+                    value="0"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        document
+          .getElementById('variantsContainer')
+          .insertAdjacentHTML('beforeend', variantHTML);
+      }
+
+      // Remove a variant
+      function removeVariant(id) {
+        const variant = document.getElementById(`variant-${id}`);
+        if (variant) {
+          variant.remove();
+        }
+      }
+
+      // Preview variant images
+      function previewVariantImages(variantId) {
+        const input = document.getElementById(`variantImages-${variantId}`);
+        const previewContainer = document.getElementById(
+          `variantImagePreview-${variantId}`,
+        );
+
+        previewContainer.innerHTML = '';
+
+        if (input.files) {
+          Array.from(input.files).forEach((file, index) => {
+            // Check file size (max 300KB)
+            if (file.size > 300 * 1024) {
+              alert(`Image "${file.name}" is too large. Max size is 300KB.`);
+              return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+              const imgWrapper = document.createElement('div');
+              imgWrapper.className = 'relative';
+              imgWrapper.innerHTML = `
+                <img src="${e.target.result}" class="w-full h-24 object-cover rounded border border-gray-300" alt="Preview ${index + 1}">
+                <button
+                  type="button"
+                  onclick="removeVariantImage(${variantId}, ${index})"
+                  class="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                >
+                  ×
+                </button>
+              `;
+              previewContainer.appendChild(imgWrapper);
+            };
+            reader.readAsDataURL(file);
+          });
+        }
+      }
+
+      // Remove a specific image from variant
+      function removeVariantImage(variantId, imageIndex) {
+        const input = document.getElementById(`variantImages-${variantId}`);
+        const dt = new DataTransfer();
+
+        Array.from(input.files).forEach((file, index) => {
+          if (index !== imageIndex) {
+            dt.items.add(file);
+          }
+        });
+
+        input.files = dt.files;
+        previewVariantImages(variantId);
+      }
+
+      // Reset form
+      function resetForm() {
+        document.getElementById('productForm').reset();
+        document.getElementById('variantsContainer').innerHTML = '';
+        variantCount = 0;
+        hideMessages();
+      }
+
+      // Hide messages
+      function hideMessages() {
+        document.getElementById('successMessage').classList.add('hidden');
+        document.getElementById('errorMessage').classList.add('hidden');
+      }
+
+      // Form submission
+      document
+        .getElementById('productForm')
+        .addEventListener('submit', async function (e) {
+          e.preventDefault();
+          hideMessages();
+
+          try {
+            // Create FormData for multipart/form-data submission
+            const formData = new FormData();
+
+            // Add basic fields
+            formData.append(
+              'name',
+              document.querySelector('[name="name"]').value,
+            );
+            formData.append(
+              'description',
+              document.querySelector('[name="description"]').value,
+            );
+            formData.append(
+              'category',
+              document.querySelector('[name="category"]').value,
+            );
+            formData.append(
+              'brand',
+              document.querySelector('[name="brand"]').value,
+            );
+
+            const slugValue = document.querySelector('[name="slug"]').value;
+            if (slugValue) {
+              formData.append('slug', slugValue);
+            }
+
+            formData.append(
+              'featured',
+              document.getElementById('featured').checked,
+            );
+            formData.append(
+              'is_active',
+              document.getElementById('is_active').checked,
+            );
+
+            // Get all variants
+            const variantElements =
+              document.querySelectorAll('[id^="variant-"]');
+            if (variantElements.length === 0) {
+              throw new Error('At least one variant is required');
+            }
+
+            const variants = [];
+
+            variantElements.forEach((variantEl, index) => {
+              const variantId = variantEl.id.replace('variant-', '');
+
+              // Get variant data
+              const sku = document.querySelector(
+                `[name="variants[${variantId}][sku]"]`,
+              ).value;
+              const attributesStr = document.querySelector(
+                `[name="variants[${variantId}][attributes]"]`,
+              ).value;
+              const price = parseFloat(
+                document.querySelector(`[name="variants[${variantId}][price]"]`)
+                  .value,
+              );
+              const sale_price = document.querySelector(
+                `[name="variants[${variantId}][sale_price]"]`,
+              ).value;
+              const quantity_available = parseInt(
+                document.querySelector(
+                  `[name="variants[${variantId}][inventory][quantity_available]"]`,
+                ).value || 0,
+              );
+              const quantity_reserved = parseInt(
+                document.querySelector(
+                  `[name="variants[${variantId}][inventory][quantity_reserved]"]`,
+                ).value || 0,
+              );
+              const quantity_damaged = parseInt(
+                document.querySelector(
+                  `[name="variants[${variantId}][inventory][quantity_damaged]"]`,
+                ).value || 0,
+              );
+
+              // Parse attributes if provided
+              let attributes = undefined;
+              if (attributesStr && attributesStr.trim()) {
+                try {
+                  attributes = JSON.parse(attributesStr);
+                } catch (err) {
+                  throw new Error(
+                    `Invalid JSON in variant #${index + 1} attributes`,
+                  );
+                }
+              }
+
+              const variant = {
+                sku,
+                price,
+                inventory: {
+                  quantity_available,
+                  quantity_reserved,
+                  quantity_damaged,
+                },
+              };
+
+              if (attributes) variant.attributes = attributes;
+              if (sale_price) variant.sale_price = parseFloat(sale_price);
+
+              // Get images for this variant
+              const imageInput = document.getElementById(
+                `variantImages-${variantId}`,
+              );
+              if (imageInput && imageInput.files.length > 0) {
+                // We'll handle images separately - add them to FormData
+                Array.from(imageInput.files).forEach((file, fileIndex) => {
+                  formData.append(`variant_${index}_images`, file);
+                });
+                // Store the count so backend knows how many images this variant has
+                variant.imageCount = imageInput.files.length;
+              }
+
+              variants.push(variant);
+            });
+
+            // Add variants as JSON string
+            formData.append('variants', JSON.stringify(variants));
+
+            // Make API request with FormData
+            const response = await fetch(
+              'http://localhost:5050/api/v1/products',
+              {
+                method: 'POST',
+                headers: {
+                  // Don't set Content-Type - browser will set it with boundary for multipart/form-data
+                  Authorization:
+                    'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTBlYjY1MzQ1ZWY5ZTYzMWNmYjZkMzYiLCJyb2xlIjoic3VwZXJhZG1pbiIsImxvZ2luQ29kZSI6NzYyNjY5LCJpYXQiOjE3NjI2NDc4NjIsImV4cCI6MTc2MjY2NTg2Mn0.MYbLj0JLkFXERKgS_N0grRUFzZLU7iT_hNJ7P8lHe7s', // Replace with actual token
+                },
+                body: formData,
+              },
+            );
+
+            const result = await response.json();
+
+            if (!response.ok) {
+              throw new Error(result.message || 'Failed to create product');
+            }
+
+            // Show success message
+            document
+              .getElementById('successMessage')
+              .classList.remove('hidden');
+
+            // Reset form after short delay
+            setTimeout(() => {
+              resetForm();
+            }, 2000);
+          } catch (error) {
+            // Show error message
+            document.getElementById('errorText').textContent = error.message;
+            document.getElementById('errorMessage').classList.remove('hidden');
+          }
+        });
+
+      // Add first variant on page load
+      window.addEventListener('load', function () {
+        addVariant();
+      });
+    </script>
+  </body>
+</html>

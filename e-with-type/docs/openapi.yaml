@@ -1,0 +1,4646 @@
+openapi: 3.1.0
+info:
+  title: E-Commerce API
+  description: |
+    Full Stack E-commerce Application API built with TypeScript, Node.js, Express, and MongoDB.
+
+    This API provides comprehensive e-commerce functionality including:
+    - User authentication and management
+    - Product catalog with variants and inventory
+    - Shopping cart and wishlist
+    - Order management and tracking
+    - Store and brand management
+    - Campaigns, offers, and coupons
+    - Review and FAQ systems
+
+    ## Authentication
+    Most endpoints require authentication using JWT Bearer tokens.
+    Use the `/auth/login` endpoint to obtain access tokens.
+
+    ## File Uploads
+    Several endpoints support file uploads for images:
+    - Products: variant images (variant_0_images, variant_1_images, etc.)
+    - Categories, Brands, Stores: single image uploads
+    - Banners, Campaigns, Offers: image uploads
+
+    ## Pagination
+    List endpoints support pagination with the following query parameters:
+    - `page`: Page number (default: 1)
+    - `limit`: Items per page (default: 10, max: 100)
+    - `sortBy`: Field to sort by
+    - `sortOrder`: Sort direction (asc/desc)
+
+  version: 1.0.0
+  contact:
+    name: Md Rejoyan Islam
+    email: rejoyanislam0014@gmail.com
+  license:
+    name: ISC
+
+servers:
+  - url: http://localhost:5050/api/v1
+    description: Development server
+  - url: https://your-domain.com/api/v1
+    description: Production server
+
+tags:
+  - name: Auth
+    description: Authentication and user session management
+  - name: Users
+    description: User management (Admin only)
+  - name: Categories
+    description: Product categories
+  - name: Brands
+    description: Product brands
+  - name: Products
+    description: Product catalog with variants, reviews, and FAQs
+  - name: Cart
+    description: Shopping cart management
+  - name: Wishlist
+    description: User wishlist management
+  - name: Orders
+    description: Order processing and tracking
+  - name: Stores
+    description: Store locations and information
+  - name: Banners
+    description: Marketing banners
+  - name: Campaigns
+    description: Marketing campaigns
+  - name: Coupons
+    description: Discount coupons
+  - name: Offers
+    description: Special offers and promotions
+  - name: Analytics
+    description: Analytics and reporting (Admin only)
+
+security:
+  - BearerAuth: []
+
+paths:
+  # Health and Info
+  /:
+    get:
+      summary: Welcome message
+      tags: [System]
+      security: []
+      responses:
+        '200':
+          description: Welcome message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /health:
+    get:
+      summary: Health check
+      tags: [System]
+      security: []
+      responses:
+        '200':
+          description: Service health status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Authentication
+  /auth/register:
+    post:
+      summary: Register new user
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - first_name
+                - last_name
+                - email
+                - password
+              properties:
+                first_name:
+                  type: string
+                  minLength: 2
+                  example: 'John'
+                last_name:
+                  type: string
+                  minLength: 1
+                  example: 'Doe'
+                email:
+                  type: string
+                  format: email
+                  example: 'john.doe@example.com'
+                password:
+                  type: string
+                  minLength: 6
+                  example: 'password123'
+                phone:
+                  type: string
+                  minLength: 10
+                  example: '+1234567890'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /auth/login:
+    post:
+      summary: User login
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: 'john.doe@example.com'
+                password:
+                  type: string
+                  minLength: 6
+                  example: 'password123'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user:
+                            $ref: '#/components/schemas/User'
+                          access_token:
+                            type: string
+                          refresh_token:
+                            type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+                  example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          access_token:
+                            type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      summary: User logout
+      tags: [Auth]
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /auth/me:
+    get:
+      summary: Get current user profile
+      tags: [Auth]
+      parameters:
+        - name: fields
+          in: query
+          description: Comma-separated list of fields to include
+          schema:
+            type: string
+            example: 'first_name,last_name,email,phone'
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+
+    put:
+      summary: Update current user profile
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                first_name:
+                  type: string
+                  minLength: 1
+                last_name:
+                  type: string
+                  minLength: 1
+                phone:
+                  type: string
+                  minLength: 10
+                avatar:
+                  type: string
+                  format: binary
+                  description: Profile picture (max 300KB)
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /auth/me/password:
+    patch:
+      summary: Change current user password
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - old_password
+                - new_password
+              properties:
+                old_password:
+                  type: string
+                  minLength: 6
+                new_password:
+                  type: string
+                  minLength: 6
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Users Management (Admin only)
+  /users:
+    get:
+      summary: Get all users
+      tags: [Users]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/SortOrder'
+        - $ref: '#/components/parameters/Fields'
+        - name: role
+          in: query
+          description: Filter by user role
+          schema:
+            type: string
+            enum: [superadmin, admin, user]
+      responses:
+        '200':
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/User'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+
+    post:
+      summary: Create new user
+      tags: [Users]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                first_name:
+                  type: string
+                  minLength: 1
+                last_name:
+                  type: string
+                  minLength: 1
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 6
+                phone:
+                  type: string
+                  minLength: 6
+                role:
+                  type: string
+                  enum: [superadmin, admin, user]
+                  default: user
+                is_active:
+                  type: boolean
+                  default: true
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /users/{id}:
+    get:
+      summary: Get user by ID
+      tags: [Users]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/Fields'
+      responses:
+        '200':
+          description: User retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+
+    put:
+      summary: Update user
+      tags: [Users]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                first_name:
+                  type: string
+                  minLength: 1
+                last_name:
+                  type: string
+                  minLength: 1
+                phone:
+                  type: string
+                  minLength: 6
+                role:
+                  type: string
+                  enum: [superadmin, admin, user]
+                is_active:
+                  type: boolean
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    delete:
+      summary: Delete user
+      tags: [Users]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /users/{id}/status:
+    patch:
+      summary: Change user status
+      tags: [Users]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - is_active
+              properties:
+                is_active:
+                  type: boolean
+      responses:
+        '200':
+          description: User status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /users/{id}/change-password:
+    patch:
+      summary: Change user password
+      tags: [Users]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password
+              properties:
+                password:
+                  type: string
+                  minLength: 6
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Categories
+  /categories:
+    get:
+      summary: Get all categories
+      tags: [Categories]
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/SortOrder'
+        - $ref: '#/components/parameters/Fields'
+        - name: parent
+          in: query
+          description: Filter by parent category ID
+          schema:
+            type: string
+        - name: is_active
+          in: query
+          description: Filter by active status
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Categories retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Category'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+
+    post:
+      summary: Create new category
+      tags: [Categories]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  example: 'Electronics'
+                description:
+                  type: string
+                  example: 'Electronic devices and accessories'
+                parent:
+                  type: string
+                  description: Parent category ID
+                  example: '507f1f77bcf86cd799439011'
+                slug:
+                  type: string
+                  pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+                  example: 'electronics'
+                is_active:
+                  type: boolean
+                  default: true
+                image:
+                  type: string
+                  format: binary
+                  description: Category image (max 300KB)
+      responses:
+        '201':
+          description: Category created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /categories/with-children:
+    get:
+      summary: Get categories with their children
+      tags: [Categories]
+      security: []
+      responses:
+        '200':
+          description: Categories with children retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          allOf:
+                            - $ref: '#/components/schemas/Category'
+                            - type: object
+                              properties:
+                                children:
+                                  type: array
+                                  items:
+                                    $ref: '#/components/schemas/Category'
+
+  /categories/{id}:
+    get:
+      summary: Get category by ID
+      tags: [Categories]
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/CategoryId'
+        - $ref: '#/components/parameters/Fields'
+      responses:
+        '200':
+          description: Category retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Category'
+
+    put:
+      summary: Update category
+      tags: [Categories]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CategoryId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                description:
+                  type: string
+                parent:
+                  type: string
+                  description: Parent category ID
+                slug:
+                  type: string
+                  pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+                is_active:
+                  type: boolean
+                image:
+                  type: string
+                  format: binary
+                  description: Category image (max 300KB)
+      responses:
+        '200':
+          description: Category updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    delete:
+      summary: Delete category
+      tags: [Categories]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CategoryId'
+      responses:
+        '200':
+          description: Category deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /categories/{id}/status:
+    patch:
+      summary: Change category status
+      tags: [Categories]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CategoryId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - is_active
+              properties:
+                is_active:
+                  type: boolean
+      responses:
+        '200':
+          description: Category status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Brands
+  /brands:
+    get:
+      summary: Get all brands
+      tags: [Brands]
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/SortOrder'
+        - $ref: '#/components/parameters/Fields'
+        - name: is_active
+          in: query
+          description: Filter by active status
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Brands retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Brand'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+
+    post:
+      summary: Create new brand
+      tags: [Brands]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  example: 'Apple'
+                description:
+                  type: string
+                  example: 'Technology company'
+                slug:
+                  type: string
+                  pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+                  example: 'apple'
+                website:
+                  type: string
+                  format: uri
+                  example: 'https://apple.com'
+                is_active:
+                  type: boolean
+                  default: true
+                logo:
+                  type: string
+                  format: binary
+                  description: Brand logo (max 300KB)
+      responses:
+        '201':
+          description: Brand created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /brands/{id}:
+    get:
+      summary: Get brand by ID
+      tags: [Brands]
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/BrandId'
+        - $ref: '#/components/parameters/Fields'
+      responses:
+        '200':
+          description: Brand retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Brand'
+
+    put:
+      summary: Update brand
+      tags: [Brands]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/BrandId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                description:
+                  type: string
+                slug:
+                  type: string
+                  pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+                website:
+                  type: string
+                  format: uri
+                is_active:
+                  type: boolean
+                logo:
+                  type: string
+                  format: binary
+                  description: Brand logo (max 300KB)
+      responses:
+        '200':
+          description: Brand updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    delete:
+      summary: Delete brand
+      tags: [Brands]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/BrandId'
+      responses:
+        '200':
+          description: Brand deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /brands/{id}/status:
+    patch:
+      summary: Change brand status
+      tags: [Brands]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/BrandId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - is_active
+              properties:
+                is_active:
+                  type: boolean
+      responses:
+        '200':
+          description: Brand status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Products
+  /products:
+    get:
+      summary: Get all products
+      tags: [Products]
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/SortOrder'
+        - $ref: '#/components/parameters/Fields'
+        - name: category
+          in: query
+          description: Filter by category ID
+          schema:
+            type: string
+        - name: brand
+          in: query
+          description: Filter by brand ID
+          schema:
+            type: string
+        - name: featured
+          in: query
+          description: Filter by featured status
+          schema:
+            type: boolean
+        - name: is_active
+          in: query
+          description: Filter by active status
+          schema:
+            type: boolean
+        - name: min_price
+          in: query
+          description: Minimum price filter
+          schema:
+            type: number
+            minimum: 0
+        - name: max_price
+          in: query
+          description: Maximum price filter
+          schema:
+            type: number
+            minimum: 0
+        - name: includeCampaigns
+          in: query
+          description: Include campaign details
+          schema:
+            type: boolean
+            default: false
+        - name: includeOffers
+          in: query
+          description: Include offer details
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Products retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Product'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+
+    post:
+      summary: Create new product
+      tags: [Products]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - description
+                - category
+                - brand
+                - variants
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  example: 'iPhone 15'
+                description:
+                  type: string
+                  example: 'Latest iPhone with advanced features'
+                category:
+                  type: string
+                  description: Category ID
+                  example: '507f1f77bcf86cd799439011'
+                brand:
+                  type: string
+                  description: Brand ID
+                  example: '507f1f77bcf86cd799439012'
+                slug:
+                  type: string
+                  pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+                  example: 'iphone-15'
+                featured:
+                  type: string
+                  enum: ['true', 'false']
+                  default: 'false'
+                is_active:
+                  type: string
+                  enum: ['true', 'false']
+                  default: 'true'
+                variants:
+                  type: string
+                  description: JSON array of variant objects
+                  example: '[{"sku":"IPHONE-15-128","price":999.99,"inventory":{"quantity_available":100}}]'
+                variant_0_images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Images for first variant (max 300KB each)
+                variant_1_images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Images for second variant (max 300KB each)
+      responses:
+        '201':
+          description: Product created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /products/reviews:
+    get:
+      summary: Get all product reviews
+      description: Get all reviews across all products
+      tags: [Products]
+      security: []
+      responses:
+        '200':
+          description: Reviews retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Review'
+
+  /products/{id}:
+    get:
+      summary: Get product by ID
+      tags: [Products]
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+        - $ref: '#/components/parameters/Fields'
+        - name: includeCampaigns
+          in: query
+          description: Include campaign details
+          schema:
+            type: boolean
+            default: false
+        - name: includeOffers
+          in: query
+          description: Include offer details
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Product retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Product'
+
+    put:
+      summary: Update product
+      tags: [Products]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                description:
+                  type: string
+                category:
+                  type: string
+                  description: Category ID
+                brand:
+                  type: string
+                  description: Brand ID
+                slug:
+                  type: string
+                  pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+                featured:
+                  type: string
+                  enum: ['true', 'false']
+                is_active:
+                  type: string
+                  enum: ['true', 'false']
+                variants:
+                  type: string
+                  description: JSON array of variant objects
+                variant_0_images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Images for first variant
+      responses:
+        '200':
+          description: Product updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    delete:
+      summary: Delete product
+      tags: [Products]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      responses:
+        '200':
+          description: Product deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Cart Management
+  /carts:
+    get:
+      summary: Get user's cart
+      tags: [Cart]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Fields'
+        - name: populate
+          in: query
+          description: Populate product and variant details
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Cart retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Cart'
+
+    delete:
+      summary: Clear user's cart
+      tags: [Cart]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Cart cleared successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /carts/items:
+    post:
+      summary: Add item to cart
+      tags: [Cart]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - product
+                - variant
+                - quantity
+              properties:
+                product:
+                  type: string
+                  description: Product ID
+                  example: '507f1f77bcf86cd799439011'
+                variant:
+                  type: string
+                  description: Variant ID
+                  example: '507f1f77bcf86cd799439013'
+                quantity:
+                  type: integer
+                  minimum: 1
+                  example: 2
+      responses:
+        '201':
+          description: Item added to cart successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /carts/items/{itemId}:
+    put:
+      summary: Update cart item
+      tags: [Cart]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          description: Cart item ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quantity
+              properties:
+                quantity:
+                  type: integer
+                  minimum: 1
+                  example: 3
+      responses:
+        '200':
+          description: Cart item updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    delete:
+      summary: Remove cart item
+      tags: [Cart]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          description: Cart item ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cart item removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Wishlist Management
+  /wishlist:
+    get:
+      summary: Get user's wishlist
+      tags: [Wishlist]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Fields'
+        - name: includeUser
+          in: query
+          description: Include user details
+          schema:
+            type: boolean
+            default: false
+        - name: includeProduct
+          in: query
+          description: Include product details
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Wishlist retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/WishlistItem'
+
+    post:
+      summary: Add item to wishlist
+      tags: [Wishlist]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - product
+              properties:
+                product:
+                  type: string
+                  description: Product ID
+                  example: '507f1f77bcf86cd799439011'
+      responses:
+        '201':
+          description: Item added to wishlist successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    delete:
+      summary: Clear user's wishlist
+      tags: [Wishlist]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Wishlist cleared successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /wishlist/{id}:
+    get:
+      summary: Get wishlist item by ID
+      tags: [Wishlist]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Wishlist item ID
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Fields'
+        - name: includeUser
+          in: query
+          description: Include user details
+          schema:
+            type: boolean
+            default: false
+        - name: includeProduct
+          in: query
+          description: Include product details
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Wishlist item retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/WishlistItem'
+
+    delete:
+      summary: Remove item from wishlist
+      tags: [Wishlist]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Wishlist item ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Item removed from wishlist successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /wishlist/all-items:
+    get:
+      summary: Get all wishlist items (Admin only)
+      tags: [Wishlist]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/SortOrder'
+        - $ref: '#/components/parameters/Fields'
+        - name: includeUser
+          in: query
+          description: Include user details
+          schema:
+            type: boolean
+            default: false
+        - name: includeProduct
+          in: query
+          description: Include product details
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: All wishlist items retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/WishlistItem'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+
+  /wishlist/user/{userId}:
+    get:
+      summary: Get user's wishlist by user ID (Admin only)
+      tags: [Wishlist]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/Fields'
+      responses:
+        '200':
+          description: User wishlist retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/WishlistItem'
+
+    delete:
+      summary: Clear user's wishlist by user ID (Admin only)
+      tags: [Wishlist]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: User wishlist cleared successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Orders Management
+  /orders:
+    get:
+      summary: Get all orders
+      tags: [Orders]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/SortOrder'
+        - $ref: '#/components/parameters/Fields'
+        - name: status
+          in: query
+          description: Filter by order status
+          schema:
+            type: string
+            enum: [pending, processing, shipped, delivered, cancelled, returned]
+        - name: payment_status
+          in: query
+          description: Filter by payment status
+          schema:
+            type: string
+            enum: [pending, paid, failed, refunded]
+      responses:
+        '200':
+          description: Orders retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Order'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+
+    post:
+      summary: Create new order
+      tags: [Orders]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - items
+                - shipping_address
+                - payment_method
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/OrderItem'
+                shipping_address:
+                  $ref: '#/components/schemas/Address'
+                billing_address:
+                  $ref: '#/components/schemas/Address'
+                payment_method:
+                  type: string
+                  enum:
+                    [credit_card, debit_card, cash_on_delivery, bank_transfer]
+                notes:
+                  type: string
+      responses:
+        '201':
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /orders/stats:
+    get:
+      summary: Get order statistics (Admin only)
+      tags: [Orders]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: start_date
+          in: query
+          description: Start date for stats
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          description: End date for stats
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Order stats retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /orders/report:
+    get:
+      summary: Get order report (Admin only)
+      tags: [Orders]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: start_date
+          in: query
+          description: Start date for report
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          description: End date for report
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Order report retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /orders/tracking/{tracking_number}:
+    get:
+      summary: Get order by tracking number
+      tags: [Orders]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tracking_number
+          in: path
+          required: true
+          description: Order tracking number
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Order retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Order'
+
+  /orders/user/{user_id}:
+    get:
+      summary: Get user's orders (Admin only)
+      tags: [Orders]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User orders retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Order'
+
+  /orders/{id}:
+    get:
+      summary: Get order by ID
+      tags: [Orders]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Order ID
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Fields'
+      responses:
+        '200':
+          description: Order retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Order'
+
+    put:
+      summary: Update order (Admin only)
+      tags: [Orders]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Order ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                shipping_address:
+                  $ref: '#/components/schemas/Address'
+                billing_address:
+                  $ref: '#/components/schemas/Address'
+                payment_method:
+                  type: string
+                  enum:
+                    [credit_card, debit_card, cash_on_delivery, bank_transfer]
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Order updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    delete:
+      summary: Delete order (Admin only)
+      tags: [Orders]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Order ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Order deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /orders/{id}/status:
+    patch:
+      summary: Update order status (Admin only)
+      tags: [Orders]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Order ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum:
+                    [
+                      pending,
+                      processing,
+                      shipped,
+                      delivered,
+                      cancelled,
+                      returned,
+                    ]
+      responses:
+        '200':
+          description: Order status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /orders/{id}/cancel:
+    post:
+      summary: Cancel order
+      tags: [Orders]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Order ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - cancellation_reason
+              properties:
+                cancellation_reason:
+                  type: string
+                  minLength: 1
+                  example: 'Changed my mind'
+      responses:
+        '200':
+          description: Order cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /orders/{id}/return:
+    post:
+      summary: Return order
+      tags: [Orders]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Order ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - return_reason
+              properties:
+                return_reason:
+                  type: string
+                  minLength: 1
+                  example: 'Product defective'
+      responses:
+        '200':
+          description: Order return initiated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /orders/{id}/refund:
+    post:
+      summary: Refund order (Admin only)
+      tags: [Orders]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Order ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refund_amount
+                - refund_status
+              properties:
+                refund_amount:
+                  type: number
+                  minimum: 0
+                  example: 100.00
+                refund_status:
+                  type: string
+                  enum: [pending, processed, failed]
+                  example: 'processed'
+      responses:
+        '200':
+          description: Order refunded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /orders/{id}/track:
+    post:
+      summary: Update order tracking (Admin only)
+      tags: [Orders]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Order ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tracking_number
+              properties:
+                tracking_number:
+                  type: string
+                  minLength: 1
+                  example: '1234567890'
+      responses:
+        '200':
+          description: Tracking info updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Stores Management
+  /stores:
+    get:
+      summary: Get all stores
+      tags: [Stores]
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/SortOrder'
+        - $ref: '#/components/parameters/Fields'
+        - name: is_active
+          in: query
+          description: Filter by active status
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Stores retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Store'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+
+    post:
+      summary: Create new store
+      tags: [Stores]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - address
+              properties:
+                name:
+                  type: string
+                  example: 'Downtown Store'
+                description:
+                  type: string
+                  example: 'Main city location'
+                address:
+                  type: string
+                  description: JSON string of address object
+                  example: '{"street":"123 Main St","city":"New York","state":"NY","postal_code":"10001","country":"USA"}'
+                phone:
+                  type: string
+                  example: '+1234567890'
+                email:
+                  type: string
+                  format: email
+                  example: 'store@example.com'
+                working_hours:
+                  type: string
+                  description: JSON string of working hours object
+                  example: '{"monday":{"open":"09:00","close":"21:00"}}'
+                is_active:
+                  type: boolean
+                  default: true
+                image:
+                  type: string
+                  format: binary
+                  description: Store image (max 300KB)
+      responses:
+        '201':
+          description: Store created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /stores/{id}:
+    get:
+      summary: Get store by ID
+      tags: [Stores]
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Store ID
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Fields'
+      responses:
+        '200':
+          description: Store retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Store'
+
+    put:
+      summary: Update store
+      tags: [Stores]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Store ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                address:
+                  type: string
+                  description: JSON string of address object
+                phone:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                working_hours:
+                  type: string
+                  description: JSON string of working hours object
+                is_active:
+                  type: boolean
+                image:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Store updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    delete:
+      summary: Delete store
+      tags: [Stores]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Store ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Store deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /stores/{id}/status:
+    patch:
+      summary: Update store status
+      tags: [Stores]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Store ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - is_active
+              properties:
+                is_active:
+                  type: boolean
+      responses:
+        '200':
+          description: Store status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Banners Management
+  /banners:
+    get:
+      summary: Get all banners
+      tags: [Banners]
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/SortOrder'
+        - $ref: '#/components/parameters/Fields'
+        - name: position
+          in: query
+          description: Filter by position
+          schema:
+            type: string
+            enum: [home_hero, home_secondary, category_top, sidebar]
+        - name: is_active
+          in: query
+          description: Filter by active status
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Banners retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Banner'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+
+    post:
+      summary: Create new banner
+      tags: [Banners]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - title
+                - position
+              properties:
+                title:
+                  type: string
+                  example: 'Summer Sale'
+                description:
+                  type: string
+                  example: 'Up to 50% off'
+                link:
+                  type: string
+                  format: uri
+                  example: '/campaigns/summer-sale'
+                position:
+                  type: string
+                  enum: [home_hero, home_secondary, category_top, sidebar]
+                  example: 'home_hero'
+                priority:
+                  type: integer
+                  minimum: 0
+                  default: 0
+                start_date:
+                  type: string
+                  format: date-time
+                end_date:
+                  type: string
+                  format: date-time
+                is_active:
+                  type: boolean
+                  default: true
+                image:
+                  type: string
+                  format: binary
+                  description: Banner image (max 300KB)
+      responses:
+        '201':
+          description: Banner created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /banners/{id}:
+    get:
+      summary: Get banner by ID
+      tags: [Banners]
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Banner ID
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Fields'
+      responses:
+        '200':
+          description: Banner retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Banner'
+
+    put:
+      summary: Update banner
+      tags: [Banners]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Banner ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                link:
+                  type: string
+                  format: uri
+                position:
+                  type: string
+                  enum: [home_hero, home_secondary, category_top, sidebar]
+                priority:
+                  type: integer
+                  minimum: 0
+                start_date:
+                  type: string
+                  format: date-time
+                end_date:
+                  type: string
+                  format: date-time
+                is_active:
+                  type: boolean
+                image:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Banner updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    delete:
+      summary: Delete banner
+      tags: [Banners]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Banner ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Banner deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /banners/{id}/status:
+    patch:
+      summary: Update banner status
+      tags: [Banners]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Banner ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - is_active
+              properties:
+                is_active:
+                  type: boolean
+      responses:
+        '200':
+          description: Banner status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Campaigns Management
+  /campaigns:
+    get:
+      summary: Get all campaigns
+      tags: [Campaigns]
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/SortOrder'
+        - $ref: '#/components/parameters/Fields'
+        - name: is_active
+          in: query
+          description: Filter by active status
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Campaigns retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Campaign'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+
+    post:
+      summary: Create new campaign
+      tags: [Campaigns]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - discount_type
+                - discount_value
+              properties:
+                name:
+                  type: string
+                  example: 'Black Friday 2025'
+                description:
+                  type: string
+                  example: 'Biggest sale of the year'
+                slug:
+                  type: string
+                  pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+                  example: 'black-friday-2025'
+                discount_type:
+                  type: string
+                  enum: [percentage, fixed]
+                  example: 'percentage'
+                discount_value:
+                  type: number
+                  minimum: 0
+                  example: 20
+                start_date:
+                  type: string
+                  format: date-time
+                end_date:
+                  type: string
+                  format: date-time
+                target_categories:
+                  type: string
+                  description: JSON array of category IDs
+                  example: '["507f1f77bcf86cd799439011"]'
+                target_brands:
+                  type: string
+                  description: JSON array of brand IDs
+                  example: '["507f1f77bcf86cd799439012"]'
+                is_active:
+                  type: boolean
+                  default: true
+                image:
+                  type: string
+                  format: binary
+                  description: Campaign image (max 300KB)
+      responses:
+        '201':
+          description: Campaign created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /campaigns/{id}:
+    get:
+      summary: Get campaign by ID
+      tags: [Campaigns]
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Campaign ID
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Fields'
+      responses:
+        '200':
+          description: Campaign retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Campaign'
+
+    put:
+      summary: Update campaign
+      tags: [Campaigns]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Campaign ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                slug:
+                  type: string
+                  pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+                discount_type:
+                  type: string
+                  enum: [percentage, fixed]
+                discount_value:
+                  type: number
+                  minimum: 0
+                start_date:
+                  type: string
+                  format: date-time
+                end_date:
+                  type: string
+                  format: date-time
+                target_categories:
+                  type: string
+                  description: JSON array of category IDs
+                target_brands:
+                  type: string
+                  description: JSON array of brand IDs
+                is_active:
+                  type: boolean
+                image:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Campaign updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    delete:
+      summary: Delete campaign
+      tags: [Campaigns]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Campaign ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Campaign deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /campaigns/{id}/status:
+    patch:
+      summary: Update campaign status
+      tags: [Campaigns]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Campaign ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - is_active
+              properties:
+                is_active:
+                  type: boolean
+      responses:
+        '200':
+          description: Campaign status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Coupons Management
+  /coupons:
+    get:
+      summary: Get all coupons
+      tags: [Coupons]
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/SortOrder'
+        - $ref: '#/components/parameters/Fields'
+        - name: is_active
+          in: query
+          description: Filter by active status
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Coupons retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Coupon'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+
+    post:
+      summary: Create new coupon
+      tags: [Coupons]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+                - discount_type
+                - discount_value
+              properties:
+                code:
+                  type: string
+                  example: 'SAVE20'
+                description:
+                  type: string
+                  example: 'Save 20% on your order'
+                discount_type:
+                  type: string
+                  enum: [percentage, fixed]
+                  example: 'percentage'
+                discount_value:
+                  type: number
+                  minimum: 0
+                  example: 20
+                min_purchase_amount:
+                  type: number
+                  minimum: 0
+                  example: 100
+                max_discount_amount:
+                  type: number
+                  minimum: 0
+                  example: 50
+                usage_limit:
+                  type: integer
+                  minimum: 0
+                  example: 100
+                valid_from:
+                  type: string
+                  format: date-time
+                valid_until:
+                  type: string
+                  format: date-time
+                is_active:
+                  type: boolean
+                  default: true
+      responses:
+        '201':
+          description: Coupon created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /coupons/{id}:
+    get:
+      summary: Get coupon by ID
+      tags: [Coupons]
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Coupon ID
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Fields'
+      responses:
+        '200':
+          description: Coupon retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Coupon'
+
+    put:
+      summary: Update coupon
+      tags: [Coupons]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Coupon ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                description:
+                  type: string
+                discount_type:
+                  type: string
+                  enum: [percentage, fixed]
+                discount_value:
+                  type: number
+                  minimum: 0
+                min_purchase_amount:
+                  type: number
+                  minimum: 0
+                max_discount_amount:
+                  type: number
+                  minimum: 0
+                usage_limit:
+                  type: integer
+                  minimum: 0
+                valid_from:
+                  type: string
+                  format: date-time
+                valid_until:
+                  type: string
+                  format: date-time
+                is_active:
+                  type: boolean
+      responses:
+        '200':
+          description: Coupon updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    delete:
+      summary: Delete coupon
+      tags: [Coupons]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Coupon ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Coupon deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /coupons/{id}/status:
+    patch:
+      summary: Update coupon status
+      tags: [Coupons]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Coupon ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - is_active
+              properties:
+                is_active:
+                  type: boolean
+      responses:
+        '200':
+          description: Coupon status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Offers Management
+  /offers:
+    get:
+      summary: Get all offers
+      tags: [Offers]
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/SortOrder'
+        - $ref: '#/components/parameters/Fields'
+        - name: is_active
+          in: query
+          description: Filter by active status
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Offers retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Offer'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+
+    post:
+      summary: Create new offer
+      tags: [Offers]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - offer_type
+              properties:
+                name:
+                  type: string
+                  example: 'Buy One Get One Free'
+                description:
+                  type: string
+                  example: 'BOGO on selected items'
+                slug:
+                  type: string
+                  pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+                  example: 'bogo-offer'
+                offer_type:
+                  type: string
+                  enum:
+                    [
+                      buy_x_get_y,
+                      percentage_off,
+                      fixed_amount_off,
+                      free_shipping,
+                    ]
+                  example: 'buy_x_get_y'
+                buy_quantity:
+                  type: integer
+                  minimum: 1
+                  example: 1
+                get_quantity:
+                  type: integer
+                  minimum: 1
+                  example: 1
+                discount_value:
+                  type: number
+                  minimum: 0
+                  example: 100
+                start_date:
+                  type: string
+                  format: date-time
+                end_date:
+                  type: string
+                  format: date-time
+                is_active:
+                  type: boolean
+                  default: true
+                image:
+                  type: string
+                  format: binary
+                  description: Offer image (max 300KB)
+      responses:
+        '201':
+          description: Offer created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /offers/{id}:
+    get:
+      summary: Get offer by ID
+      tags: [Offers]
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Offer ID
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Fields'
+      responses:
+        '200':
+          description: Offer retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Offer'
+
+    put:
+      summary: Update offer
+      tags: [Offers]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Offer ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                slug:
+                  type: string
+                  pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+                offer_type:
+                  type: string
+                  enum:
+                    [
+                      buy_x_get_y,
+                      percentage_off,
+                      fixed_amount_off,
+                      free_shipping,
+                    ]
+                buy_quantity:
+                  type: integer
+                  minimum: 1
+                get_quantity:
+                  type: integer
+                  minimum: 1
+                discount_value:
+                  type: number
+                  minimum: 0
+                start_date:
+                  type: string
+                  format: date-time
+                end_date:
+                  type: string
+                  format: date-time
+                is_active:
+                  type: boolean
+                image:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Offer updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    delete:
+      summary: Delete offer
+      tags: [Offers]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Offer ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Offer deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /offers/{id}/status:
+    patch:
+      summary: Update offer status
+      tags: [Offers]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Offer ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - is_active
+              properties:
+                is_active:
+                  type: boolean
+      responses:
+        '200':
+          description: Offer status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Analytics (Admin only)
+  /analytics/summary:
+    get:
+      summary: Get dashboard summary
+      description: Get comprehensive dashboard summary with stats from all modules
+      tags: [Analytics]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Dashboard summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/DashboardSummary'
+
+  /analytics/sales:
+    get:
+      summary: Get sales analytics
+      description: Get sales analytics with time series data
+      tags: [Analytics]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: start_date
+          in: query
+          description: Start date for analytics (ISO 8601 format)
+          schema:
+            type: string
+            format: date
+            example: '2024-01-01'
+        - name: end_date
+          in: query
+          description: End date for analytics (ISO 8601 format)
+          schema:
+            type: string
+            format: date
+            example: '2024-12-31'
+        - name: period
+          in: query
+          description: Aggregation period
+          schema:
+            type: string
+            enum: [daily, weekly, monthly, yearly]
+            default: daily
+      responses:
+        '200':
+          description: Sales analytics retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/SalesAnalytics'
+
+  /analytics/orders:
+    get:
+      summary: Get order analytics
+      description: Get order analytics with status breakdown
+      tags: [Analytics]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: start_date
+          in: query
+          description: Start date for analytics (ISO 8601 format)
+          schema:
+            type: string
+            format: date
+            example: '2024-01-01'
+        - name: end_date
+          in: query
+          description: End date for analytics (ISO 8601 format)
+          schema:
+            type: string
+            format: date
+            example: '2024-12-31'
+        - name: period
+          in: query
+          description: Aggregation period
+          schema:
+            type: string
+            enum: [daily, weekly, monthly, yearly]
+            default: daily
+      responses:
+        '200':
+          description: Order analytics retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/OrderAnalytics'
+
+  /analytics/products/top:
+    get:
+      summary: Get top selling products
+      description: Get list of top selling products
+      tags: [Analytics]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          description: Number of products to return (max 50)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+        - name: start_date
+          in: query
+          description: Start date for analytics (ISO 8601 format)
+          schema:
+            type: string
+            format: date
+            example: '2024-01-01'
+        - name: end_date
+          in: query
+          description: End date for analytics (ISO 8601 format)
+          schema:
+            type: string
+            format: date
+            example: '2024-12-31'
+      responses:
+        '200':
+          description: Top products retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TopProduct'
+
+  /analytics/products/low-stock:
+    get:
+      summary: Get low stock products
+      description: Get list of products with low inventory
+      tags: [Analytics]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: threshold
+          in: query
+          description: Stock threshold (products with quantity at or below this)
+          schema:
+            type: integer
+            minimum: 1
+            default: 10
+      responses:
+        '200':
+          description: Low stock products retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/LowStockProduct'
+
+  /analytics/sales/by-category:
+    get:
+      summary: Get sales by category
+      description: Get sales breakdown by product category
+      tags: [Analytics]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: start_date
+          in: query
+          description: Start date for analytics (ISO 8601 format)
+          schema:
+            type: string
+            format: date
+            example: '2024-01-01'
+        - name: end_date
+          in: query
+          description: End date for analytics (ISO 8601 format)
+          schema:
+            type: string
+            format: date
+            example: '2024-12-31'
+      responses:
+        '200':
+          description: Category sales retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CategorySales'
+
+  /analytics/revenue/comparison:
+    get:
+      summary: Get revenue comparison
+      description: Compare revenue between current and previous periods (weekly and monthly)
+      tags: [Analytics]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Revenue comparison retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/RevenueComparison'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    # Common ID parameters
+    UserId:
+      name: id
+      in: path
+      required: true
+      description: User ID
+      schema:
+        type: string
+        pattern: '^[0-9a-fA-F]{24}$'
+        example: '507f1f77bcf86cd799439011'
+
+    CategoryId:
+      name: id
+      in: path
+      required: true
+      description: Category ID
+      schema:
+        type: string
+        pattern: '^[0-9a-fA-F]{24}$'
+        example: '507f1f77bcf86cd799439011'
+
+    BrandId:
+      name: id
+      in: path
+      required: true
+      description: Brand ID
+      schema:
+        type: string
+        pattern: '^[0-9a-fA-F]{24}$'
+        example: '507f1f77bcf86cd799439011'
+
+    ProductId:
+      name: id
+      in: path
+      required: true
+      description: Product ID
+      schema:
+        type: string
+        pattern: '^[0-9a-fA-F]{24}$'
+        example: '507f1f77bcf86cd799439011'
+
+    # Common query parameters
+    Search:
+      name: search
+      in: query
+      description: Search term
+      schema:
+        type: string
+        example: 'smartphone'
+
+    Page:
+      name: page
+      in: query
+      description: Page number
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+        example: 1
+
+    Limit:
+      name: limit
+      in: query
+      description: Number of items per page
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+        example: 10
+
+    SortBy:
+      name: sortBy
+      in: query
+      description: Field to sort by
+      schema:
+        type: string
+        example: 'createdAt'
+
+    SortOrder:
+      name: sortOrder
+      in: query
+      description: Sort order
+      schema:
+        type: string
+        enum: [asc, desc]
+        default: desc
+        example: 'desc'
+
+    Fields:
+      name: fields
+      in: query
+      description: Comma-separated list of fields to include
+      schema:
+        type: string
+        example: 'name,email,phone'
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: 'Validation error'
+            error:
+              issues:
+                - path: ['email']
+                  message: 'Invalid email format'
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: 'Unauthorized access'
+
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: 'Insufficient permissions'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: 'Resource not found'
+
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: 'Email already exists'
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: 'Internal server error'
+
+  schemas:
+    # Common response schemas
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: 'Operation completed successfully'
+        data:
+          type: object
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: 'Error message'
+        error:
+          type: object
+
+    Pagination:
+      type: object
+      properties:
+        items:
+          type: integer
+          description: Total number of items
+          example: 25
+        page:
+          type: integer
+          description: Current page number
+          example: 1
+        limit:
+          type: integer
+          description: Items per page
+          example: 10
+        totalPages:
+          type: integer
+          description: Total number of pages
+          example: 3
+
+    # Entity schemas
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: '507f1f77bcf86cd799439011'
+        first_name:
+          type: string
+          example: 'John'
+        last_name:
+          type: string
+          example: 'Doe'
+        email:
+          type: string
+          format: email
+          example: 'john.doe@example.com'
+        phone:
+          type: string
+          example: '+1234567890'
+        avatar:
+          type: string
+          example: 'uploads/users/avatar-123.jpg'
+        role:
+          type: string
+          enum: [superadmin, admin, user]
+          example: 'user'
+        is_active:
+          type: boolean
+          example: true
+        last_login:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+
+    Category:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: '507f1f77bcf86cd799439011'
+        name:
+          type: string
+          example: 'Electronics'
+        description:
+          type: string
+          example: 'Electronic devices and accessories'
+        slug:
+          type: string
+          example: 'electronics'
+        parent:
+          type: string
+          nullable: true
+          example: '507f1f77bcf86cd799439012'
+        image:
+          type: string
+          example: 'uploads/categories/electronics.jpg'
+        is_active:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+
+    Brand:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: '507f1f77bcf86cd799439011'
+        name:
+          type: string
+          example: 'Apple'
+        description:
+          type: string
+          example: 'Technology company'
+        slug:
+          type: string
+          example: 'apple'
+        website:
+          type: string
+          format: uri
+          example: 'https://apple.com'
+        logo:
+          type: string
+          example: 'uploads/brands/apple-logo.jpg'
+        is_active:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+
+    Inventory:
+      type: object
+      properties:
+        quantity_available:
+          type: integer
+          minimum: 0
+          example: 100
+        quantity_reserved:
+          type: integer
+          minimum: 0
+          example: 5
+        quantity_damaged:
+          type: integer
+          minimum: 0
+          example: 2
+        last_updated:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+
+    ProductVariant:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: '507f1f77bcf86cd799439013'
+        sku:
+          type: string
+          example: 'IPHONE-15-128GB-BLUE'
+        attributes:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            color: 'Blue'
+            storage: '128GB'
+        price:
+          type: number
+          minimum: 0
+          example: 999.99
+        sale_price:
+          type: number
+          minimum: 0
+          example: 899.99
+        images:
+          type: array
+          items:
+            type: string
+          example:
+            [
+              'uploads/products/variant1-img1.jpg',
+              'uploads/products/variant1-img2.jpg',
+            ]
+        inventory:
+          $ref: '#/components/schemas/Inventory'
+
+    ProductReview:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: '507f1f77bcf86cd799439014'
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 5
+        comment:
+          type: string
+          example: 'Great product, highly recommended!'
+        user:
+          type: string
+          example: '507f1f77bcf86cd799439015'
+        timestamp:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+
+    ProductFAQ:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: '507f1f77bcf86cd799439016'
+        question:
+          type: string
+          example: 'What is the warranty period?'
+        answer:
+          type: string
+          example: '1 year limited warranty'
+        timestamp:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+
+    Product:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: '507f1f77bcf86cd799439011'
+        name:
+          type: string
+          example: 'iPhone 15'
+        description:
+          type: string
+          example: 'Latest iPhone with advanced features'
+        slug:
+          type: string
+          example: 'iphone-15'
+        category:
+          type: string
+          example: '507f1f77bcf86cd799439012'
+        brand:
+          type: string
+          example: '507f1f77bcf86cd799439013'
+        featured:
+          type: boolean
+          example: true
+        is_active:
+          type: boolean
+          example: true
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductVariant'
+        reviews:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductReview'
+        faq:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductFAQ'
+        campaigns:
+          type: array
+          items:
+            type: string
+          example: ['507f1f77bcf86cd799439017']
+        offers:
+          type: array
+          items:
+            type: string
+          example: ['507f1f77bcf86cd799439018']
+        createdAt:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+
+    CartItem:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: '507f1f77bcf86cd799439019'
+        product:
+          type: string
+          example: '507f1f77bcf86cd799439011'
+        variant:
+          type: string
+          example: '507f1f77bcf86cd799439013'
+        quantity:
+          type: integer
+          minimum: 1
+          example: 2
+        price:
+          type: number
+          minimum: 0
+          example: 999.99
+        total:
+          type: number
+          minimum: 0
+          example: 1999.98
+        addedAt:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+
+    Cart:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: '507f1f77bcf86cd79943901a'
+        user:
+          type: string
+          example: '507f1f77bcf86cd799439015'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        total_amount:
+          type: number
+          minimum: 0
+          example: 1999.98
+        total_items:
+          type: integer
+          minimum: 0
+          example: 2
+        createdAt:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+
+    WishlistItem:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: '507f1f77bcf86cd79943901b'
+        user:
+          type: string
+          example: '507f1f77bcf86cd799439015'
+        product:
+          type: string
+          example: '507f1f77bcf86cd799439011'
+        addedAt:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+
+    OrderItem:
+      type: object
+      properties:
+        product:
+          type: string
+          example: '507f1f77bcf86cd799439011'
+        variant:
+          type: string
+          example: '507f1f77bcf86cd799439013'
+        quantity:
+          type: integer
+          minimum: 1
+          example: 2
+        price:
+          type: number
+          minimum: 0
+          example: 999.99
+        total:
+          type: number
+          minimum: 0
+          example: 1999.98
+
+    Address:
+      type: object
+      properties:
+        street:
+          type: string
+          example: '123 Main St'
+        city:
+          type: string
+          example: 'New York'
+        state:
+          type: string
+          example: 'NY'
+        postal_code:
+          type: string
+          example: '10001'
+        country:
+          type: string
+          example: 'USA'
+
+    Order:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: '507f1f77bcf86cd79943901c'
+        tracking_number:
+          type: string
+          example: 'TRK-1699520000000-ABC123'
+        user:
+          type: string
+          example: '507f1f77bcf86cd799439015'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        shipping_address:
+          $ref: '#/components/schemas/Address'
+        billing_address:
+          $ref: '#/components/schemas/Address'
+        payment_method:
+          type: string
+          enum: [credit_card, debit_card, cash_on_delivery, bank_transfer]
+          example: 'credit_card'
+        payment_status:
+          type: string
+          enum: [pending, paid, failed, refunded]
+          example: 'paid'
+        status:
+          type: string
+          enum: [pending, processing, shipped, delivered, cancelled, returned]
+          example: 'processing'
+        subtotal:
+          type: number
+          minimum: 0
+          example: 1999.98
+        tax:
+          type: number
+          minimum: 0
+          example: 199.99
+        shipping_cost:
+          type: number
+          minimum: 0
+          example: 50.00
+        discount:
+          type: number
+          minimum: 0
+          example: 100.00
+        total:
+          type: number
+          minimum: 0
+          example: 2149.97
+        notes:
+          type: string
+          example: 'Please deliver before 5 PM'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+
+    Store:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: '507f1f77bcf86cd79943901d'
+        name:
+          type: string
+          example: 'Downtown Store'
+        description:
+          type: string
+          example: 'Main city location'
+        address:
+          $ref: '#/components/schemas/Address'
+        phone:
+          type: string
+          example: '+1234567890'
+        email:
+          type: string
+          format: email
+          example: 'store@example.com'
+        working_hours:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              open:
+                type: string
+                example: '09:00'
+              close:
+                type: string
+                example: '21:00'
+          example:
+            monday: { open: '09:00', close: '21:00' }
+            tuesday: { open: '09:00', close: '21:00' }
+        image:
+          type: string
+          example: 'uploads/stores/downtown-store.jpg'
+        is_active:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+
+    Banner:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: '507f1f77bcf86cd79943901e'
+        title:
+          type: string
+          example: 'Summer Sale'
+        description:
+          type: string
+          example: 'Up to 50% off on selected items'
+        image:
+          type: string
+          example: 'uploads/banners/summer-sale.jpg'
+        link:
+          type: string
+          format: uri
+          example: '/campaigns/summer-sale'
+        position:
+          type: string
+          enum: [home_hero, home_secondary, category_top, sidebar]
+          example: 'home_hero'
+        priority:
+          type: integer
+          minimum: 0
+          example: 1
+        start_date:
+          type: string
+          format: date-time
+          example: '2025-11-01T00:00:00Z'
+        end_date:
+          type: string
+          format: date-time
+          example: '2025-11-30T23:59:59Z'
+        is_active:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+
+    Campaign:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: '507f1f77bcf86cd79943901f'
+        name:
+          type: string
+          example: 'Black Friday 2025'
+        description:
+          type: string
+          example: 'Biggest sale of the year'
+        slug:
+          type: string
+          example: 'black-friday-2025'
+        image:
+          type: string
+          example: 'uploads/campaigns/black-friday.jpg'
+        discount_type:
+          type: string
+          enum: [percentage, fixed]
+          example: 'percentage'
+        discount_value:
+          type: number
+          minimum: 0
+          example: 20
+        start_date:
+          type: string
+          format: date-time
+          example: '2025-11-24T00:00:00Z'
+        end_date:
+          type: string
+          format: date-time
+          example: '2025-11-27T23:59:59Z'
+        target_categories:
+          type: array
+          items:
+            type: string
+          example: ['507f1f77bcf86cd799439011']
+        target_brands:
+          type: array
+          items:
+            type: string
+          example: ['507f1f77bcf86cd799439012']
+        products:
+          type: array
+          items:
+            type: string
+          example: ['507f1f77bcf86cd799439013']
+        is_active:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+
+    Coupon:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: '507f1f77bcf86cd799439020'
+        code:
+          type: string
+          example: 'SAVE20'
+        description:
+          type: string
+          example: 'Save 20% on your order'
+        discount_type:
+          type: string
+          enum: [percentage, fixed]
+          example: 'percentage'
+        discount_value:
+          type: number
+          minimum: 0
+          example: 20
+        min_purchase_amount:
+          type: number
+          minimum: 0
+          example: 100
+        max_discount_amount:
+          type: number
+          minimum: 0
+          example: 50
+        usage_limit:
+          type: integer
+          minimum: 0
+          example: 100
+        used_count:
+          type: integer
+          minimum: 0
+          example: 25
+        valid_from:
+          type: string
+          format: date-time
+          example: '2025-11-01T00:00:00Z'
+        valid_until:
+          type: string
+          format: date-time
+          example: '2025-11-30T23:59:59Z'
+        is_active:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+
+    Offer:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: '507f1f77bcf86cd799439021'
+        name:
+          type: string
+          example: 'Buy One Get One Free'
+        description:
+          type: string
+          example: 'BOGO on selected items'
+        slug:
+          type: string
+          example: 'bogo-offer'
+        image:
+          type: string
+          example: 'uploads/offers/bogo.jpg'
+        offer_type:
+          type: string
+          enum: [buy_x_get_y, percentage_off, fixed_amount_off, free_shipping]
+          example: 'buy_x_get_y'
+        buy_quantity:
+          type: integer
+          minimum: 1
+          example: 1
+        get_quantity:
+          type: integer
+          minimum: 1
+          example: 1
+        discount_value:
+          type: number
+          minimum: 0
+          example: 100
+        products:
+          type: array
+          items:
+            type: string
+          example: ['507f1f77bcf86cd799439011']
+        start_date:
+          type: string
+          format: date-time
+          example: '2025-11-01T00:00:00Z'
+        end_date:
+          type: string
+          format: date-time
+          example: '2025-11-30T23:59:59Z'
+        is_active:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2025-11-09T10:30:00Z'
+
+    # Analytics Schemas
+    DashboardSummary:
+      type: object
+      properties:
+        products:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 150
+            active:
+              type: integer
+              example: 120
+            inactive:
+              type: integer
+              example: 30
+            new_this_month:
+              type: integer
+              example: 15
+        brands:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 25
+            active:
+              type: integer
+              example: 20
+            inactive:
+              type: integer
+              example: 5
+        categories:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 50
+            active:
+              type: integer
+              example: 45
+            inactive:
+              type: integer
+              example: 5
+        orders:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 500
+            pending:
+              type: integer
+              example: 25
+            processing:
+              type: integer
+              example: 30
+            shipped:
+              type: integer
+              example: 50
+            delivered:
+              type: integer
+              example: 380
+            cancelled:
+              type: integer
+              example: 10
+            returned:
+              type: integer
+              example: 5
+            this_month:
+              type: integer
+              example: 75
+        users:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 1000
+            new_this_month:
+              type: integer
+              example: 50
+            verified:
+              type: integer
+              example: 850
+        revenue:
+          type: object
+          properties:
+            total:
+              type: number
+              example: 150000
+            this_month:
+              type: number
+              example: 25000
+            average_order_value:
+              type: number
+              example: 300
+        campaigns:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 10
+            active:
+              type: integer
+              example: 3
+        coupons:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 20
+            active:
+              type: integer
+              example: 8
+        stores:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 5
+            active:
+              type: integer
+              example: 5
+        banners:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 8
+            active:
+              type: integer
+              example: 4
+
+    SalesAnalytics:
+      type: object
+      properties:
+        period:
+          type: string
+          enum: [daily, weekly, monthly, yearly]
+          example: 'daily'
+        start_date:
+          type: string
+          format: date-time
+          example: '2024-01-01T00:00:00Z'
+        end_date:
+          type: string
+          format: date-time
+          example: '2024-12-31T23:59:59Z'
+        total_sales:
+          type: number
+          example: 150000
+        total_orders:
+          type: integer
+          example: 500
+        average_order_value:
+          type: number
+          example: 300
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                example: '2024-11-15'
+              sales:
+                type: number
+                example: 5000
+              orders:
+                type: integer
+                example: 20
+
+    OrderAnalytics:
+      type: object
+      properties:
+        period:
+          type: string
+          enum: [daily, weekly, monthly, yearly]
+          example: 'daily'
+        start_date:
+          type: string
+          format: date-time
+          example: '2024-01-01T00:00:00Z'
+        end_date:
+          type: string
+          format: date-time
+          example: '2024-12-31T23:59:59Z'
+        total_orders:
+          type: integer
+          example: 500
+        by_status:
+          type: object
+          properties:
+            pending:
+              type: integer
+              example: 25
+            processing:
+              type: integer
+              example: 30
+            shipped:
+              type: integer
+              example: 50
+            delivered:
+              type: integer
+              example: 380
+            cancelled:
+              type: integer
+              example: 10
+            returned:
+              type: integer
+              example: 5
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                example: '2024-11-15'
+              orders:
+                type: integer
+                example: 20
+              status_breakdown:
+                type: object
+                properties:
+                  pending:
+                    type: integer
+                    example: 5
+                  processing:
+                    type: integer
+                    example: 3
+                  shipped:
+                    type: integer
+                    example: 5
+                  delivered:
+                    type: integer
+                    example: 6
+                  cancelled:
+                    type: integer
+                    example: 1
+                  returned:
+                    type: integer
+                    example: 0
+
+    TopProduct:
+      type: object
+      properties:
+        product_id:
+          type: string
+          example: '507f1f77bcf86cd799439011'
+        name:
+          type: string
+          example: 'iPhone 15 Pro'
+        total_sold:
+          type: integer
+          example: 150
+        revenue:
+          type: number
+          example: 149850
+
+    LowStockProduct:
+      type: object
+      properties:
+        product_id:
+          type: string
+          example: '507f1f77bcf86cd799439011'
+        name:
+          type: string
+          example: 'iPhone 15 Pro'
+        sku:
+          type: string
+          example: 'IPHONE-15-PRO-256GB-BLACK'
+        quantity:
+          type: integer
+          example: 5
+
+    CategorySales:
+      type: object
+      properties:
+        category_id:
+          type: string
+          example: '507f1f77bcf86cd799439011'
+        category_name:
+          type: string
+          example: 'Electronics'
+        count:
+          type: integer
+          example: 250
+        total_sales:
+          type: number
+          example: 75000
+
+    RevenueComparison:
+      type: object
+      properties:
+        monthly:
+          type: object
+          properties:
+            current:
+              type: number
+              example: 25000
+            previous:
+              type: number
+              example: 22000
+            change:
+              type: integer
+              description: Percentage change from previous period
+              example: 14
+            orders:
+              type: object
+              properties:
+                current:
+                  type: integer
+                  example: 80
+                previous:
+                  type: integer
+                  example: 75
+        weekly:
+          type: object
+          properties:
+            current:
+              type: number
+              example: 6000
+            previous:
+              type: number
+              example: 5500
+            change:
+              type: integer
+              description: Percentage change from previous period
+              example: 9
+            orders:
+              type: object
+              properties:
+                current:
+                  type: integer
+                  example: 20
+                previous:
+                  type: integer
+                  example: 18
