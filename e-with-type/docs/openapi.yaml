@@ -1196,6 +1196,124 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
 
+  /products/{id}/reviews:
+    post:
+      summary: Add product review
+      tags: [Products]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - rating
+                - comment
+              properties:
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  example: 5
+                comment:
+                  type: string
+                  minLength: 1
+                  example: 'Great product!'
+      responses:
+        '201':
+          description: Review added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /products/{id}/reviews/{reviewId}:
+    put:
+      summary: Update product review
+      description: Update your own review
+      tags: [Products]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+        - name: reviewId
+          in: path
+          required: true
+          description: Review ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  example: 4
+                comment:
+                  type: string
+                  example: 'Updated review'
+      responses:
+        '200':
+          description: Review updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    delete:
+      summary: Delete product review
+      description: Delete your own review
+      tags: [Products]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+        - name: reviewId
+          in: path
+          required: true
+          description: Review ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Review deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /products/{id}/reviews/{reviewId}/admin:
+    delete:
+      summary: Delete product review (Admin)
+      description: Admin can delete any review without ownership check
+      tags: [Products]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+        - name: reviewId
+          in: path
+          required: true
+          description: Review ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Review deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
   # Cart Management
   /carts:
     get:
@@ -1251,17 +1369,12 @@ paths:
               type: object
               required:
                 - product
-                - variant
                 - quantity
               properties:
                 product:
                   type: string
                   description: Product ID
                   example: '507f1f77bcf86cd799439011'
-                variant:
-                  type: string
-                  description: Variant ID
-                  example: '507f1f77bcf86cd799439013'
                 quantity:
                   type: integer
                   minimum: 1

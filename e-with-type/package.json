@@ -22,9 +22,9 @@
     "express",
     "mongodb"
   ],
-  "author": "Md Rejoyan Islam",
-  "authorEmail": "rejoyanislam0014@gmail.com",
-  "license": "ISC",
+  "author": "Md Rejoyan Islam <rejoyanislam0014@gmail.com>",
+  "license": "SEE LICENSE IN ../LICENSE",
+  "private": true,
   "packageManager": "pnpm@10.20.0",
   "dependencies": {
     "@eslint/js": "^9.38.0",

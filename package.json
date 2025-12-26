@@ -1,7 +1,8 @@
 {
   "name": "eco",
   "version": "1.0.0",
-  "description": "",
+  "description": "Full-stack E-commerce application with Next.js dashboard and Express.js backend",
+  "private": true,
   "main": "index.js",
   "scripts": {
     "install:all": "pnpm install",
@@ -9,8 +10,12 @@
     "build": "pnpm --filter ./e-with-type build && pnpm --filter ./dashboard build",
     "start": "pnpm --filter ./e-with-type start & pnpm --filter ./dashboard start"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["ecommerce", "nextjs", "express", "mongodb", "dashboard"],
+  "author": "Md Rejoyan Islam <rejoyanislam0014@gmail.com>",
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "private"
+  },
   "packageManager": "pnpm@10.26.2"
 }
